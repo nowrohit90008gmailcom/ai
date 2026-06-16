@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block title %}Settings — YouTube Content Factory{% endblock %}
+{% block topbar_title %}⚙️ Settings{% endblock %}
+
+{% block content %}
+<div x-data="settingsPage()" x-init="init()">
+
+  <div class="page-header">
+    <h2 class="page-title">Settings</h2>
+    <p class="page-desc">Configure API connections, posting flags, and notification preferences</p>
+  </div>
+
+  <!-- ─── API Key Status ────────────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header">
+      <p class="card-title">🔑 API Keys Status</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      <template x-for="(val, key) in settings.api_keys" :key="key">
+        <div style="padding:14px;background:var(--bg-elevated);border-radius:10px;
+                    border:1px solid var(--border)">
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:6px"
+            x-text="key.replace('_',' ').toUpperCase()"></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span :class="val === 'NOT_SET' ? 'badge-error' : 'badge-success'" class="badge"
+              x-text="val === 'NOT_SET' ? '❌ Not Set' : '✅ Configured'"></span>
+          </div>
+          <div x-show="val !== 'NOT_SET'"
+            style="font-size:11px;color:var(--text-muted);margin-top:6px;
+                   font-family:'JetBrains Mono',monospace" x-text="val"></div>
+        </div>
+      </template>
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:12px">
+      ℹ️ Edit API keys in your <code style="background:var(--bg-elevated);padding:2px 6px;border-radius:4px">.env</code> file on the VPS, then restart the service.
+    </p>
+  </div>
+
+  <!-- ─── Channel Connections ──────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header">
+      <p class="card-title">📡 Channel Connections</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <template x-for="(ch, key) in settings.channels" :key="key">
+        <div style="display:flex;align-items:center;gap:16px;padding:14px;
+                    background:var(--bg-elevated);border-radius:10px;border:1px solid var(--border)">
+          <div style="width:10px;height:10px;border-radius:50%;flex-shrink:0"
+            :style="`background:${chColor(key)}`"></div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600" x-text="ch.name"></div>
+            <div style="font-size:12px;color:var(--text-muted)" x-text="ch.google_account"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <span class="badge" :class="ch.youtube_connected ? 'badge-success' : 'badge-error'"
+              x-text="ch.youtube_connected ? '✅ YouTube' : '❌ YouTube'"></span>
+            <span class="badge" :class="ch.meta_connected ? 'badge-success' : 'badge-ghost'"
+              x-text="ch.meta_connected ? '✅ Meta' : '○ Meta'"></span>
+          </div>
+        </div>
+      </template>
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:12px">
+      To authenticate YouTube: run <code style="background:var(--bg-elevated);padding:2px 6px;border-radius:4px">python modules/auth_manager.py</code> on the VPS for each channel.
+    </p>
+  </div>
+
+  <!-- ─── Posting Flags ─────────────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header">
+      <p class="card-title">📤 Posting Platforms</p>
+      <span class="badge badge-ghost">Toggle to enable/disable per platform</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;
+                  background:var(--bg-elevated);border-radius:10px;border:1px solid var(--border)">
+        <div>
+          <div style="font-size:13px;font-weight:600">▶ YouTube Shorts</div>
+          <div style="font-size:12px;color:var(--text-muted)">YouTube Data API v3</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" x-model="flags.post_to_youtube" @change="saveFlags()">
+          <div class="toggle-slider"></div>
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;
+                  background:var(--bg-elevated);border-radius:10px;border:1px solid var(--border)">
+        <div>
+          <div style="font-size:13px;font-weight:600">📘 Facebook Reels</div>
+          <div style="font-size:12px;color:var(--text-muted)">Meta Graph API</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" x-model="flags.post_to_facebook" @change="saveFlags()">
+          <div class="toggle-slider"></div>
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;
+                  background:var(--bg-elevated);border-radius:10px;border:1px solid var(--border)">
+        <div>
+          <div style="font-size:13px;font-weight:600">📸 Instagram Reels</div>
+          <div style="font-size:12px;color:var(--text-muted)">Meta Graph API (2-step)</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" x-model="flags.post_to_instagram" @change="saveFlags()">
+          <div class="toggle-slider"></div>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Notifications + Cron ─────────────────────────────────────── -->
+  <div class="grid-2">
+
+    <div class="card">
+      <div class="card-header">
+        <p class="card-title">🔔 Notifications</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">ntfy.sh Topic</label>
+        <input class="form-input" type="text" x-model="notifications.ntfy_topic" placeholder="youtube_factory">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Alert Email</label>
+        <input class="form-input" type="email" x-model="notifications.gmail_address">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" @click="saveNotifications()">Save</button>
+        <button class="btn btn-ghost btn-sm" @click="testNotification()">🧪 Send Test</button>
+      </div>
+      <div x-show="notifMsg" x-transition style="margin-top:10px;font-size:12px;color:var(--color-success)"
+        x-text="notifMsg"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <p class="card-title">⏰ Cron Jobs</p>
+      </div>
+      <div style="margin-bottom:12px">
+        <span class="badge" :class="cronInstalled ? 'badge-success' : 'badge-error'"
+          x-text="cronInstalled ? '✅ Cron Jobs Installed' : '❌ Not Installed'"></span>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6">
+        6 posting jobs + 1 analytics job.<br>
+        Times based on UTC (EST + 5h).
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" @click="installCron()">⚙️ Install Crons</button>
+        <button class="btn btn-ghost btn-sm" @click="checkCron()">🔍 Check Status</button>
+      </div>
+      <div x-show="cronMsg" x-transition
+        style="margin-top:10px;font-size:11px;color:var(--text-muted);
+               font-family:'JetBrains Mono',monospace;white-space:pre-wrap"
+        x-text="cronMsg"></div>
+    </div>
+
+  </div>
+
+  <!-- Save feedback -->
+  <div x-show="globalMsg" x-transition
+    style="position:fixed;bottom:24px;right:24px;z-index:300;
+           background:var(--bg-card);border:1px solid rgba(34,197,94,0.3);
+           border-radius:10px;padding:12px 20px;font-size:13px;
+           color:var(--color-success);box-shadow:var(--shadow-lg)"
+    x-text="globalMsg">
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function settingsPage() {
+  return {
+    settings: {api_keys:{},channels:{},posting_flags:{},notifications:{}},
+    flags: {post_to_youtube:true, post_to_facebook:true, post_to_instagram:true},
+    notifications: {ntfy_topic:'', gmail_address:''},
+    cronInstalled: false,
+    cronMsg: '',
+    notifMsg: '',
+    globalMsg: '',
+
+    async init() { await this.load(); },
+
+    async load() {
+      const r = await fetch('/api/settings');
+      if (r.status === 401) { window.location='/login'; return; }
+      this.settings = await r.json();
+      this.flags = {...this.settings.posting_flags};
+      this.notifications = {...this.settings.notifications};
+      await this.checkCron();
+    },
+
+    async saveFlags() {
+      await fetch('/api/settings/posting-flags', {
+        method: 'PATCH',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(this.flags),
+      });
+      this.showGlobal('✅ Platform settings saved');
+    },
+
+    async saveNotifications() {
+      await fetch('/api/settings/notifications', {
+        method: 'PATCH',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(this.notifications),
+      });
+      this.notifMsg = '✅ Saved';
+      setTimeout(() => this.notifMsg = '', 2000);
+    },
+
+    async testNotification() {
+      await fetch('/api/settings/test-notification', {method:'POST'});
+      this.notifMsg = '✅ Test sent!';
+      setTimeout(() => this.notifMsg = '', 3000);
+    },
+
+    async checkCron() {
+      const r = await fetch('/api/settings/cron-status');
+      const data = await r.json();
+      this.cronInstalled = data.installed || false;
+    },
+
+    async installCron() {
+      const r = await fetch('/api/settings/install-cron', {method:'POST'});
+      const data = await r.json();
+      this.cronMsg = data.stdout || data.stderr || 'Done';
+      await this.checkCron();
+    },
+
+    showGlobal(msg) {
+      this.globalMsg = msg;
+      setTimeout(() => this.globalMsg = '', 3000);
+    },
+
+    chColor(ch) {
+      return {horror_crime:'#dc2626',manners_fun:'#16a34a',cartoon_stories:'#7c3aed'}[ch]||'#6366f1';
+    },
+  }
+}
+</script>
+{% endblock %}

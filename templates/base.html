@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}YouTube Content Factory{% endblock %}</title>
+  <meta name="description" content="Automated YouTube Shorts content factory — 3 channels, 180 videos/month.">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/static/css/style.css">
+
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.10/dist/cdn.min.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+  {% block head %}{% endblock %}
+</head>
+<body x-data="app()" x-init="init()">
+
+<div class="app-layout">
+
+  <!-- ─── Sidebar ─────────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🎬</div>
+      <h1>Content Factory</h1>
+      <p>3 Channels · 180 Shorts/Mo</p>
+    </div>
+
+    <nav class="sidebar-nav">
+      <p class="nav-section-label">Control</p>
+
+      <a href="/dashboard" class="nav-item {% if request.url.path == '/dashboard' %}active{% endif %}">
+        <span class="nav-icon">🏠</span>
+        Dashboard
+      </a>
+
+      <a href="/bulk-run" class="nav-item {% if request.url.path == '/bulk-run' %}active{% endif %}">
+        <span class="nav-icon">🚀</span>
+        Bulk Run
+        <span x-show="runStatus === 'running'" class="badge badge-success" style="margin-left:auto;font-size:10px">LIVE</span>
+      </a>
+
+      <p class="nav-section-label">Content</p>
+
+      <a href="/calendar" class="nav-item {% if request.url.path == '/calendar' %}active{% endif %}">
+        <span class="nav-icon">📅</span>
+        Calendar
+      </a>
+
+      <a href="/library" class="nav-item {% if request.url.path == '/library' %}active{% endif %}">
+        <span class="nav-icon">🗂️</span>
+        Library
+      </a>
+
+      <a href="/analytics" class="nav-item {% if request.url.path == '/analytics' %}active{% endif %}">
+        <span class="nav-icon">📊</span>
+        Analytics
+      </a>
+
+      <p class="nav-section-label">System</p>
+
+      <a href="/settings" class="nav-item {% if request.url.path == '/settings' %}active{% endif %}">
+        <span class="nav-icon">⚙️</span>
+        Settings
+      </a>
+
+      <button class="nav-item" onclick="logout()" style="width:100%;text-align:left">
+        <span class="nav-icon">🚪</span>
+        Logout
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-status">
+        <div class="status-dot"></div>
+        <span>VPS 1 Online</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--text-muted)" x-text="currentTime"></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── Main Content ─────────────────────────────────────────────── -->
+  <div class="main-content">
+
+    <!-- Top Bar -->
+    <header class="topbar">
+      <span class="topbar-title">{% block topbar_title %}Dashboard{% endblock %}</span>
+      <div class="topbar-right">
+        <div class="topbar-badge">
+          <span class="status-dot"></span>
+          <span x-text="nextPostLabel">Loading...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Body -->
+    <div class="page-content fade-in">
+      {% block content %}{% endblock %}
+    </div>
+
+  </div>
+</div>
+
+<script>
+function app() {
+  return {
+    runStatus: 'idle',
+    currentTime: '',
+    nextPostLabel: 'Calculating...',
+
+    async init() {
+      this.tick();
+      setInterval(() => this.tick(), 1000);
+      await this.loadStatus();
+      setInterval(() => this.loadStatus(), 30000);
+    },
+
+    tick() {
+      const now = new Date();
+      this.currentTime = now.toLocaleTimeString('en-US', {
+        hour: '2-digit', minute: '2-digit', hour12: false,
+        timeZone: 'UTC'
+      }) + ' UTC';
+    },
+
+    async loadStatus() {
+      try {
+        const r = await fetch('/api/dashboard/status');
+        if (r.status === 401) { window.location = '/login'; return; }
+        const data = await r.json();
+        this.runStatus = data.run_state?.status || 'idle';
+        if (data.next_post) {
+          const mins = Math.round(data.next_post.delta_seconds / 60);
+          this.nextPostLabel = `Next: ${data.next_post.channel_name} in ${mins}m`;
+        }
+      } catch(e) {}
+    }
+  }
+}
+
+async function logout() {
+  await fetch('/auth/logout', { method: 'POST' });
+  window.location = '/login';
+}
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

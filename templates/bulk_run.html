@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+{% block title %}Bulk Run Monitor — YouTube Content Factory{% endblock %}
+{% block topbar_title %}🚀 Bulk Run Live Monitor{% endblock %}
+
+{% block content %}
+<div x-data="bulkRunMonitor()" x-init="init()">
+
+  <div class="page-header">
+    <h2 class="page-title">Bulk Run Monitor</h2>
+    <p class="page-desc">Live progress of all 7 generation stages — WebSocket connected</p>
+  </div>
+
+  <!-- ─── Status Banner ─────────────────────────────────────────────── -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;padding:16px 20px;
+              background:var(--bg-card);border:1px solid var(--border);border-radius:12px">
+    <div :class="statusDotClass" style="width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
+    <div>
+      <span style="font-weight:700;font-size:14px" x-text="statusLabel">Loading...</span>
+      <span style="color:var(--text-muted);font-size:13px;margin-left:8px" x-text="runMonth"></span>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn btn-primary" id="btn-start" @click="start()" :disabled="isRunning">🚀 Start New Run</button>
+      <button class="btn btn-danger" @click="stop()" :disabled="!isRunning">⏹ Stop</button>
+      <button class="btn btn-ghost" @click="retry()">🔁 Resume</button>
+    </div>
+  </div>
+
+  <!-- ─── Overall Progress ──────────────────────────────────────────── -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header">
+      <p class="card-title">Overall Progress</p>
+      <span style="font-size:22px;font-weight:800;color:var(--text-primary)"
+        x-text="`${totalPercent}%`">0%</span>
+    </div>
+    <div class="progress-bar" style="height:10px">
+      <div class="progress-fill" style="--fill-color:linear-gradient(90deg,#6366f1,#8b5cf6)"
+        :style="`width:${totalPercent}%`"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--text-muted)">
+      <span x-text="`${totalDone} / 180 shorts`"></span>
+      <span x-text="elapsedTime"></span>
+    </div>
+  </div>
+
+  <!-- ─── Stage Cards ───────────────────────────────────────────────── -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+    <template x-for="(stage, i) in stages" :key="i">
+      <div class="card" style="padding:14px" :style="stageCardStyle(stage)">
+        <div style="font-size:18px;margin-bottom:6px" x-text="stage.icon"></div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:4px"
+          x-text="stage.name"></div>
+        <div class="badge" :class="stageBadgeClass(stage)" x-text="stage.status"></div>
+        <div x-show="stage.status === 'running'" style="margin-top:8px">
+          <div class="progress-bar">
+            <div class="progress-fill" :style="`width:${stage.percent}%;--fill-color:#6366f1`"></div>
+          </div>
+        </div>
+        <div x-show="stage.duration" style="font-size:11px;color:var(--text-muted);margin-top:4px"
+          x-text="stage.duration"></div>
+      </div>
+    </template>
+  </div>
+
+  <!-- ─── Per Channel Progress ─────────────────────────────────────── -->
+  <div class="grid-3" style="margin-bottom:20px">
+    <div class="card" style="--ch-color:#dc2626">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div style="width:8px;height:8px;border-radius:50%;background:#dc2626;box-shadow:0 0 8px #dc2626"></div>
+        <span style="font-size:13px;font-weight:600">Horror Crime</span>
+      </div>
+      <div style="font-size:24px;font-weight:800;margin-bottom:4px"
+        x-text="`${channelProgress.horror_crime || 0} / 60`"></div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="--fill-color:#dc2626"
+          :style="`width:${((channelProgress.horror_crime||0)/60)*100}%`"></div>
+      </div>
+    </div>
+    <div class="card" style="--ch-color:#16a34a">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div style="width:8px;height:8px;border-radius:50%;background:#16a34a;box-shadow:0 0 8px #16a34a"></div>
+        <span style="font-size:13px;font-weight:600">Manners Fun</span>
+      </div>
+      <div style="font-size:24px;font-weight:800;margin-bottom:4px"
+        x-text="`${channelProgress.manners_fun || 0} / 60`"></div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="--fill-color:#16a34a"
+          :style="`width:${((channelProgress.manners_fun||0)/60)*100}%`"></div>
+      </div>
+    </div>
+    <div class="card" style="--ch-color:#7c3aed">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div style="width:8px;height:8px;border-radius:50%;background:#7c3aed;box-shadow:0 0 8px #7c3aed"></div>
+        <span style="font-size:13px;font-weight:600">Cartoon Stories</span>
+      </div>
+      <div style="font-size:24px;font-weight:800;margin-bottom:4px"
+        x-text="`${channelProgress.cartoon_stories || 0} / 60`"></div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="--fill-color:#7c3aed"
+          :style="`width:${((channelProgress.cartoon_stories||0)/60)*100}%`"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Live Log Terminal ─────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-header">
+      <p class="card-title">🖥️ Live Log</p>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="status-dot" x-show="wsConnected"></div>
+        <span style="font-size:12px;color:var(--text-muted)" x-text="wsConnected ? 'WebSocket Connected' : 'Disconnected'"></span>
+        <button class="btn btn-ghost btn-sm" @click="clearLogs()">Clear</button>
+      </div>
+    </div>
+    <div class="log-terminal" id="log-terminal" x-ref="terminal">
+      <template x-for="(line, i) in logs" :key="i">
+        <div class="log-line">
+          <span class="log-time" x-text="formatTime(line.timestamp)"></span>
+          <span :class="`log-${line.level}`" x-text="line.message"></span>
+        </div>
+      </template>
+      <div x-show="logs.length === 0" style="color:var(--text-muted);text-align:center;padding:20px">
+        Waiting for bulk run to start...
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function bulkRunMonitor() {
+  return {
+    ws: null,
+    wsConnected: false,
+    logs: [],
+    runStatus: 'idle',
+    runMonth: '',
+    runStage: 0,
+    totalDone: 0,
+    totalPercent: 0,
+    elapsedTime: '',
+    startedAt: null,
+    channelProgress: {},
+
+    stages: [
+      {name:'Scraping',      icon:'🕷️',  status:'waiting', percent:0, duration:''},
+      {name:'Scripts',       icon:'✍️',  status:'waiting', percent:0, duration:''},
+      {name:'SEO',           icon:'🔍', status:'waiting', percent:0, duration:''},
+      {name:'Audio',         icon:'🎙️', status:'waiting', percent:0, duration:''},
+      {name:'Images',        icon:'🖼️', status:'waiting', percent:0, duration:''},
+      {name:'Video Clips',   icon:'🎬', status:'waiting', percent:0, duration:''},
+      {name:'Assembly',      icon:'⚙️', status:'waiting', percent:0, duration:''},
+      {name:'Upload',        icon:'☁️', status:'waiting', percent:0, duration:''},
+    ],
+
+    get isRunning() { return this.runStatus === 'running'; },
+    get statusLabel() {
+      return {idle:'Idle — ready to start',running:'Running',complete:'Complete ✅',
+              error:'Error ❌',stopped:'Stopped'}[this.runStatus] || this.runStatus;
+    },
+    get statusDotClass() {
+      return this.runStatus === 'running' ? 'status-dot'
+           : this.runStatus === 'complete' ? '' : '';
+    },
+
+    async init() {
+      await this.loadState();
+      this.connectWS();
+      setInterval(() => this.updateElapsed(), 1000);
+    },
+
+    async loadState() {
+      const r = await fetch('/api/bulk-run/status');
+      if (r.status === 401) { window.location='/login'; return; }
+      const data = await r.json();
+      this.runStatus = data.status || 'idle';
+      this.runStage = data.stage || 0;
+      this.runMonth = data.month ? `Month: ${data.month}` : '';
+      this.channelProgress = data.completed_shorts || {};
+      this.totalDone = Object.values(this.channelProgress).reduce((a,b)=>a+b,0);
+      this.totalPercent = Math.round((this.totalDone / 180) * 100);
+      this.startedAt = data.started_at ? new Date(data.started_at) : null;
+      this.updateStages(data.completed_stages || [], data.stage || 0);
+    },
+
+    connectWS() {
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      this.ws = new WebSocket(`${proto}://${location.host}/ws/logs`);
+      this.ws.onopen = () => { this.wsConnected = true; };
+      this.ws.onclose = () => {
+        this.wsConnected = false;
+        setTimeout(() => this.connectWS(), 3000);
+      };
+      this.ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        this.handleWSMessage(msg);
+      };
+      // Keep-alive
+      setInterval(() => {
+        if (this.ws?.readyState === 1) this.ws.send('ping');
+      }, 30000);
+    },
+
+    handleWSMessage(msg) {
+      if (msg.type === 'log') {
+        this.logs.push(msg);
+        if (this.logs.length > 500) this.logs = this.logs.slice(-300);
+        this.$nextTick(() => {
+          const t = this.$refs.terminal;
+          if (t) t.scrollTop = t.scrollHeight;
+        });
+      } else if (msg.type === 'progress') {
+        const s = this.stages[msg.stage - 1];
+        if (s) {
+          s.status = 'running';
+          s.percent = msg.percent;
+        }
+        this.totalDone = msg.completed;
+        this.totalPercent = Math.round((msg.completed / 180) * 100);
+      } else if (msg.type === 'status') {
+        this.runStatus = msg.status;
+        this.loadState();
+      }
+    },
+
+    updateStages(completedStages, currentStage) {
+      this.stages.forEach((s, i) => {
+        const num = i + 1;
+        if (completedStages.includes(num)) {
+          s.status = 'done';
+        } else if (num === currentStage) {
+          s.status = 'running';
+        } else {
+          s.status = 'waiting';
+        }
+      });
+    },
+
+    updateElapsed() {
+      if (!this.startedAt || this.runStatus !== 'running') return;
+      const secs = Math.floor((new Date() - this.startedAt) / 1000);
+      const h = Math.floor(secs / 3600);
+      const m = Math.floor((secs % 3600) / 60);
+      const s = secs % 60;
+      this.elapsedTime = `${h}h ${m}m ${s}s elapsed`;
+    },
+
+    clearLogs() { this.logs = []; },
+
+    formatTime(ts) {
+      if (!ts) return '';
+      return new Date(ts).toLocaleTimeString('en-US', {hour12:false});
+    },
+
+    stageCardStyle(stage) {
+      if (stage.status === 'done') return 'border-color:rgba(34,197,94,0.3)';
+      if (stage.status === 'running') return 'border-color:rgba(99,102,241,0.4);box-shadow:0 0 20px rgba(99,102,241,0.1)';
+      return '';
+    },
+
+    stageBadgeClass(stage) {
+      return {done:'badge-success',running:'badge-info',waiting:'badge-ghost',error:'badge-error'}[stage.status] || 'badge-ghost';
+    },
+
+    async start() {
+      await fetch('/api/bulk-run/start', {method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+      await this.loadState();
+    },
+    async stop() {
+      await fetch('/api/bulk-run/stop', {method:'POST'});
+      await this.loadState();
+    },
+    async retry() {
+      await fetch('/api/bulk-run/retry', {method:'POST'});
+      await this.loadState();
+    },
+  }
+}
+</script>
+{% endblock %}

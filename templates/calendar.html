@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}Calendar — YouTube Content Factory{% endblock %}
+{% block topbar_title %}📅 Content Calendar{% endblock %}
+
+{% block content %}
+<div x-data="calendarPage()" x-init="init()">
+
+  <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between">
+    <div>
+      <h2 class="page-title">Content Calendar</h2>
+      <p class="page-desc">Monthly publishing schedule — click any day to see details</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="btn btn-ghost btn-sm" @click="prevMonth()">← Prev</button>
+      <span style="font-size:15px;font-weight:700;min-width:140px;text-align:center"
+        x-text="monthLabel"></span>
+      <button class="btn btn-ghost btn-sm" @click="nextMonth()">Next →</button>
+    </div>
+  </div>
+
+  <!-- ─── Legend ─────────────────────────────────────────────────────── -->
+  <div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap">
+    <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary)">
+      <span class="cal-dot" style="background:#22c55e"></span> Published
+    </span>
+    <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary)">
+      <span class="cal-dot" style="background:#3b82f6"></span> Scheduled
+    </span>
+    <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary)">
+      <span class="cal-dot" style="background:#f59e0b"></span> Ready (unposted)
+    </span>
+    <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary)">
+      <span class="cal-dot" style="background:#ef4444"></span> Failed
+    </span>
+    <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary)">
+      <span class="cal-dot" style="background:var(--border)"></span> Empty
+    </span>
+    <!-- Channel legend -->
+    <div style="margin-left:auto;display:flex;gap:10px">
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#dc2626">■ Horror</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#16a34a">■ Manners</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#7c3aed">■ Cartoon</span>
+    </div>
+  </div>
+
+  <!-- ─── Weekday Headers ───────────────────────────────────────────── -->
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:8px">
+    <template x-for="d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" :key="d">
+      <div style="text-align:center;font-size:11px;font-weight:600;
+                  color:var(--text-muted);padding:6px 0" x-text="d"></div>
+    </template>
+  </div>
+
+  <!-- ─── Calendar Grid ─────────────────────────────────────────────── -->
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">
+    <!-- Offset days -->
+    <template x-for="i in startOffset" :key="`off-${i}`">
+      <div></div>
+    </template>
+
+    <!-- Day cells -->
+    <template x-for="day in calDays" :key="day.day">
+      <div class="cal-day"
+        :class="day.day === today ? 'today-cell' : ''"
+        :style="day.day === today ? 'border-color:rgba(99,102,241,0.5);background:rgba(99,102,241,0.05)' : ''"
+        @click="selectDay(day)">
+
+        <div class="cal-day-num" style="display:flex;justify-content:space-between">
+          <span x-text="day.day"></span>
+          <span x-show="day.day === today"
+            style="font-size:9px;background:rgba(99,102,241,0.2);color:#818cf8;
+                   padding:1px 5px;border-radius:4px;font-weight:600">TODAY</span>
+        </div>
+
+        <!-- Status dots for each slot -->
+        <div style="display:flex;flex-wrap:wrap;gap:2px">
+          <template x-for="slot in day.slots" :key="slot.channel+slot.short_num">
+            <div class="cal-dot" :style="`background:${dotColor(slot)}`"
+              :title="`${slot.channel_name} · ${slot.time_est} EST · ${slot.status}`"></div>
+          </template>
+        </div>
+
+        <!-- Posted count -->
+        <div x-show="postedCount(day) > 0" style="margin-top:4px;font-size:10px;color:var(--color-success)"
+          x-text="`${postedCount(day)}✓`"></div>
+      </div>
+    </template>
+  </div>
+
+  <!-- ─── Day Detail Modal ─────────────────────────────────────────── -->
+  <div x-show="selectedDay" x-transition
+    style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;
+           display:flex;align-items:center;justify-content:center"
+    @click.self="selectedDay=null">
+
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;
+                padding:24px;width:480px;max-height:80vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="font-size:16px;font-weight:700" x-text="`Day ${selectedDay?.day} — ${monthLabel}`"></h3>
+        <button class="btn btn-ghost btn-sm" @click="selectedDay=null">✕</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <template x-for="slot in selectedDay?.slots" :key="slot.channel+slot.short_num">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;
+                      background:var(--bg-elevated);border-radius:10px;
+                      border:1px solid var(--border)">
+            <div style="width:10px;height:10px;border-radius:50%;flex-shrink:0"
+              :style="`background:${channelColor(slot.channel)}`"></div>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:600" x-text="slot.channel_name"></div>
+              <div style="font-size:12px;color:var(--text-muted)" x-text="`Short ${slot.short_num} · ${slot.time_est} EST`"></div>
+            </div>
+            <span class="badge" :class="statusBadge(slot.status)" x-text="slot.status"></span>
+            <a x-show="slot.youtube_url" :href="slot.youtube_url" target="_blank"
+              class="btn btn-ghost btn-sm">▶</a>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div x-show="loading" style="text-align:center;padding:40px;color:var(--text-muted)">
+    Loading calendar...
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function calendarPage() {
+  const now = new Date();
+  return {
+    year: now.getUTCFullYear(),
+    month: now.getUTCMonth() + 1,
+    calDays: [],
+    startOffset: 0,
+    today: now.getUTCDate(),
+    selectedDay: null,
+    loading: false,
+
+    get monthLabel() {
+      return new Date(this.year, this.month-1, 1)
+        .toLocaleDateString('en-US', {month:'long',year:'numeric'});
+    },
+
+    async init() { await this.load(); },
+
+    async load() {
+      this.loading = true;
+      try {
+        const r = await fetch(`/api/calendar/${this.year}/${this.month}`);
+        if (r.status === 401) { window.location='/login'; return; }
+        const data = await r.json();
+        this.calDays = data.calendar || [];
+        // Calculate first day offset
+        const firstDay = new Date(this.year, this.month-1, 1).getDay();
+        this.startOffset = firstDay;
+      } catch(e) { console.error(e); }
+      this.loading = false;
+    },
+
+    prevMonth() {
+      if (this.month === 1) { this.month = 12; this.year--; }
+      else this.month--;
+      this.load();
+    },
+    nextMonth() {
+      if (this.month === 12) { this.month = 1; this.year++; }
+      else this.month++;
+      this.load();
+    },
+
+    selectDay(day) { this.selectedDay = day; },
+    postedCount(day) {
+      return day.slots?.filter(s => s.status === 'published').length || 0;
+    },
+
+    dotColor(slot) {
+      const statusColors = {
+        published: '#22c55e', scheduled: '#3b82f6',
+        ready: '#f59e0b', failed: '#ef4444', empty: 'var(--border)',
+      };
+      return statusColors[slot.status] || 'var(--border)';
+    },
+
+    channelColor(ch) {
+      return {horror_crime:'#dc2626',manners_fun:'#16a34a',cartoon_stories:'#7c3aed'}[ch]||'#6366f1';
+    },
+
+    statusBadge(s) {
+      return {published:'badge-success',scheduled:'badge-info',
+              ready:'badge-warning',failed:'badge-error',empty:'badge-ghost'}[s]||'badge-ghost';
+    },
+  }
+}
+</script>
+{% endblock %}

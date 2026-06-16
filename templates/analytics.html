@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}Analytics — YouTube Content Factory{% endblock %}
+{% block topbar_title %}📊 Performance Analytics{% endblock %}
+
+{% block content %}
+<div x-data="analyticsPage()" x-init="init()">
+
+  <div class="page-header">
+    <h2 class="page-title">Performance Analytics</h2>
+    <p class="page-desc">Views, watch time, and subscriber growth across all 3 channels</p>
+  </div>
+
+  <!-- ─── Channel Overview KPIs ────────────────────────────────────── -->
+  <div class="grid-3" style="margin-bottom:24px">
+    <template x-for="(ch, key) in channels" :key="key">
+      <div class="stat-card" :style="`--accent-grad:${chGradient(key)}`">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <div style="width:8px;height:8px;border-radius:50%;box-shadow:0 0 8px var(--c)"
+            :style="`background:${chColor(key)};--c:${chColor(key)}`"></div>
+          <span style="font-size:12px;font-weight:600;color:var(--text-secondary)" x-text="ch.name"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <div class="stat-label">Total Views</div>
+            <div style="font-size:18px;font-weight:800" x-text="fmtNum(ch.total_views)">—</div>
+          </div>
+          <div>
+            <div class="stat-label">Subscribers</div>
+            <div style="font-size:18px;font-weight:800" x-text="fmtNum(ch.total_subs_gained || ch.total_subs)">—</div>
+          </div>
+          <div>
+            <div class="stat-label">Posts</div>
+            <div style="font-size:18px;font-weight:800" x-text="ch.posts || 0">—</div>
+          </div>
+          <div>
+            <div class="stat-label">Watch Time</div>
+            <div style="font-size:18px;font-weight:800" x-text="fmtNum(ch.total_watch_time_mins) + 'h'">—</div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- ─── Charts Row ────────────────────────────────────────────────── -->
+  <div class="grid-2" style="margin-bottom:24px">
+
+    <!-- Views Over Time -->
+    <div class="card">
+      <div class="card-header">
+        <p class="card-title">Views Over Time</p>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" @click="setDays(7)"
+            :style="days===7?'border-color:rgba(99,102,241,0.5);color:#818cf8':''">7D</button>
+          <button class="btn btn-ghost btn-sm" @click="setDays(30)"
+            :style="days===30?'border-color:rgba(99,102,241,0.5);color:#818cf8':''">30D</button>
+        </div>
+      </div>
+      <canvas id="views-chart" height="200"></canvas>
+    </div>
+
+    <!-- Platform Breakdown -->
+    <div class="card">
+      <div class="card-header">
+        <p class="card-title">Platform Breakdown</p>
+        <span class="badge badge-ghost">All Channels</span>
+      </div>
+      <canvas id="platform-chart" height="200"></canvas>
+    </div>
+
+  </div>
+
+  <!-- ─── Top Videos ────────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="card-header">
+      <p class="card-title">🏆 Top Performing Videos</p>
+      <button class="btn btn-ghost btn-sm" @click="refreshAnalytics()">🔄 Refresh Data</button>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Channel</th>
+            <th>Title</th>
+            <th>Views</th>
+            <th>Likes</th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="(v, i) in topVideos" :key="v.video_id || i">
+            <tr>
+              <td style="color:var(--text-muted)" x-text="i+1"></td>
+              <td>
+                <span style="display:flex;align-items:center;gap:6px">
+                  <span style="width:6px;height:6px;border-radius:50%;display:inline-block"
+                    :style="`background:${chColor(v.channel)}`"></span>
+                  <span x-text="v.channel_name"></span>
+                </span>
+              </td>
+              <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+                x-text="v.title"></td>
+              <td style="color:var(--text-primary);font-weight:600" x-text="fmtNum(v.views)"></td>
+              <td x-text="fmtNum(v.likes)"></td>
+              <td>
+                <a x-show="v.url" :href="v.url" target="_blank"
+                  class="btn btn-ghost btn-sm">▶ View</a>
+              </td>
+            </tr>
+          </template>
+          <tr x-show="topVideos.length === 0">
+            <td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">
+              No performance data yet — post some videos first!
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let viewsChart = null, platformChart = null;
+
+function analyticsPage() {
+  return {
+    channels: {},
+    topVideos: [],
+    days: 30,
+
+    async init() {
+      await this.load();
+    },
+
+    async load() {
+      try {
+        const [ovR, topR] = await Promise.all([
+          fetch('/api/analytics/overview'),
+          fetch('/api/analytics/top-videos?limit=10'),
+        ]);
+        if (ovR.status === 401) { window.location='/login'; return; }
+        this.channels = await ovR.json();
+        this.topVideos = await topR.json();
+        this.$nextTick(() => { this.drawCharts(); });
+      } catch(e) { console.error(e); }
+    },
+
+    async setDays(d) {
+      this.days = d;
+      this.drawCharts();
+    },
+
+    async refreshAnalytics() {
+      await fetch('/api/analytics/update', {method:'POST'});
+      await this.load();
+    },
+
+    drawCharts() {
+      this.drawViewsChart();
+      this.drawPlatformChart();
+    },
+
+    drawViewsChart() {
+      const ctx = document.getElementById('views-chart');
+      if (!ctx) return;
+      if (viewsChart) viewsChart.destroy();
+
+      const colors = {horror_crime:'#dc2626',manners_fun:'#16a34a',cartoon_stories:'#7c3aed'};
+      const datasets = Object.entries(this.channels).map(([key, ch]) => ({
+        label: ch.name,
+        data: (ch.views || []).slice(-this.days).map(v => v.value || v || 0),
+        borderColor: colors[key] || '#6366f1',
+        backgroundColor: colors[key] ? colors[key]+'22' : '#6366f122',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 2,
+      }));
+
+      const labels = Array.from({length: this.days}, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (this.days - 1 - i));
+        return `${d.getMonth()+1}/${d.getDate()}`;
+      });
+
+      viewsChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { color: '#9898ab', font: { size: 11 } } } },
+          scales: {
+            x: { ticks: { color: '#5a5a6e', font: {size:10} }, grid: { color: 'rgba(255,255,255,0.04)' } },
+            y: { ticks: { color: '#5a5a6e', font: {size:10} }, grid: { color: 'rgba(255,255,255,0.04)' } },
+          },
+        }
+      });
+    },
+
+    drawPlatformChart() {
+      const ctx = document.getElementById('platform-chart');
+      if (!ctx) return;
+      if (platformChart) platformChart.destroy();
+
+      const totals = {youtube:0, facebook:0, instagram:0};
+      Object.values(this.channels).forEach(ch => {
+        if (ch.platform_breakdown) {
+          totals.youtube   += ch.platform_breakdown.youtube   || 0;
+          totals.facebook  += ch.platform_breakdown.facebook  || 0;
+          totals.instagram += ch.platform_breakdown.instagram || 0;
+        }
+      });
+
+      platformChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['YouTube', 'Facebook', 'Instagram'],
+          datasets: [{
+            data: [totals.youtube, totals.facebook, totals.instagram],
+            backgroundColor: ['#ff0000', '#1877f2', '#e1306c'],
+            borderColor: '#16161f',
+            borderWidth: 3,
+          }]
+        },
+        options: {
+          responsive: true,
+          cutout: '70%',
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#9898ab', font:{size:11}, padding:16 } }
+          },
+        }
+      });
+    },
+
+    chColor(key) {
+      return {horror_crime:'#dc2626',manners_fun:'#16a34a',cartoon_stories:'#7c3aed'}[key]||'#6366f1';
+    },
+    chGradient(key) {
+      return {
+        horror_crime:   'linear-gradient(135deg,#dc2626,#991b1b)',
+        manners_fun:    'linear-gradient(135deg,#16a34a,#15803d)',
+        cartoon_stories:'linear-gradient(135deg,#7c3aed,#5b21b6)',
+      }[key] || 'linear-gradient(135deg,#6366f1,#8b5cf6)';
+    },
+    fmtNum(n) {
+      if (!n) return '0';
+      if (n >= 1_000_000) return (n/1_000_000).toFixed(1)+'M';
+      if (n >= 1_000) return (n/1_000).toFixed(1)+'K';
+      return n.toString();
+    },
+  }
+}
+</script>
+{% endblock %}

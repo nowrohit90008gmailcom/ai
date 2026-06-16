@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block title %}Content Library — YouTube Content Factory{% endblock %}
+{% block topbar_title %}🗂️ Content Library{% endblock %}
+
+{% block content %}
+<div x-data="libraryPage()" x-init="init()">
+
+  <div class="page-header">
+    <h2 class="page-title">Content Library</h2>
+    <p class="page-desc">Browse, search, preview, and edit all generated shorts</p>
+  </div>
+
+  <!-- ─── Filters ───────────────────────────────────────────────────── -->
+  <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center">
+
+    <select class="form-input" style="width:160px" x-model="filterMonth" @change="load()">
+      <template x-for="m in availableMonths" :key="m.value">
+        <option :value="m.value" x-text="m.label"></option>
+      </template>
+    </select>
+
+    <select class="form-input" style="width:180px" x-model="filterChannel" @change="load()">
+      <option value="">All Channels</option>
+      <option value="horror_crime">Horror Crime</option>
+      <option value="manners_fun">Manners Fun</option>
+      <option value="cartoon_stories">Cartoon Stories</option>
+    </select>
+
+    <select class="form-input" style="width:140px" x-model="filterStatus" @change="load()">
+      <option value="">All Status</option>
+      <option value="ready">Ready</option>
+      <option value="pending">Pending</option>
+    </select>
+
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <span style="font-size:13px;color:var(--text-muted)" x-text="`${totalShorts} videos`"></span>
+      <button class="btn btn-ghost btn-sm" @click="load()">🔄 Refresh</button>
+    </div>
+
+  </div>
+
+  <!-- ─── Video Grid ─────────────────────────────────────────────────── -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px">
+    <template x-for="short in shorts" :key="short.id">
+      <div class="card" style="padding:0;overflow:hidden;cursor:pointer"
+        @click="selectShort(short)">
+
+        <!-- Thumbnail placeholder -->
+        <div style="aspect-ratio:9/16;background:var(--bg-elevated);max-height:140px;
+                    display:flex;align-items:center;justify-content:center;overflow:hidden;
+                    position:relative">
+          <span style="font-size:32px" x-text="channelEmoji(short.channel)"></span>
+          <div style="position:absolute;top:8px;right:8px">
+            <span class="badge" :class="statusBadge(short.status)" x-text="short.status"></span>
+          </div>
+          <div style="position:absolute;bottom:8px;left:8px">
+            <span class="badge badge-ghost" style="font-size:10px"
+              x-text="`Day ${short.day} · S${short.short_num}`"></span>
+          </div>
+        </div>
+
+        <div style="padding:14px">
+          <!-- Channel indicator -->
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+            <div style="width:6px;height:6px;border-radius:50%"
+              :style="`background:${chColor(short.channel)}`"></div>
+            <span style="font-size:11px;color:var(--text-muted)" x-text="short.channel_name"></span>
+          </div>
+
+          <!-- Title -->
+          <div style="font-size:13px;font-weight:600;color:var(--text-primary);
+                      overflow:hidden;text-overflow:ellipsis;display:-webkit-box;
+                      -webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4"
+            x-text="short.title || 'Untitled'"></div>
+
+          <!-- Assets available -->
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <span x-show="short.has_video"   class="badge badge-success" style="font-size:10px">🎬</span>
+            <span x-show="short.has_audio"   class="badge badge-info"    style="font-size:10px">🎙️</span>
+            <span x-show="short.has_thumbnail" class="badge badge-ghost" style="font-size:10px">🖼️</span>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- Empty state -->
+    <template x-if="shorts.length === 0 && !loading">
+      <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-muted)">
+        <div style="font-size:48px;margin-bottom:16px">📭</div>
+        <div style="font-size:15px;font-weight:600">No videos yet</div>
+        <div style="font-size:13px;margin-top:4px">Run a bulk generation to create content</div>
+        <a href="/bulk-run" class="btn btn-primary" style="margin-top:16px;display:inline-flex">
+          🚀 Start Bulk Run
+        </a>
+      </div>
+    </template>
+  </div>
+
+  <!-- ─── Pagination ────────────────────────────────────────────────── -->
+  <div x-show="totalPages > 1"
+    style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:24px">
+    <button class="btn btn-ghost btn-sm" @click="prevPage()" :disabled="page===1">← Prev</button>
+    <span style="font-size:13px;color:var(--text-muted)" x-text="`Page ${page} of ${totalPages}`"></span>
+    <button class="btn btn-ghost btn-sm" @click="nextPage()" :disabled="page===totalPages">Next →</button>
+  </div>
+
+  <!-- ─── Edit Modal ────────────────────────────────────────────────── -->
+  <div x-show="editShort" x-transition
+    style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;
+           display:flex;align-items:center;justify-content:center"
+    @click.self="editShort=null">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;
+                padding:24px;width:560px;max-height:85vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="font-size:15px;font-weight:700">Edit Metadata</h3>
+        <button class="btn btn-ghost btn-sm" @click="editShort=null">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Title (clickbait)</label>
+        <input class="form-input" type="text" x-model="editData.title" maxlength="60"
+          placeholder="Max 60 characters">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input" rows="4" x-model="editData.description"
+          placeholder="150-200 word description..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Script Preview</label>
+        <div style="background:var(--bg-elevated);border:1px solid var(--border);
+                    border-radius:8px;padding:12px;font-size:12px;color:var(--text-secondary);
+                    line-height:1.6;max-height:120px;overflow-y:auto"
+          x-text="editShort?.script || 'No script available'"></div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button class="btn btn-ghost" @click="editShort=null">Cancel</button>
+        <button class="btn btn-primary" @click="saveMetadata()">Save Changes</button>
+      </div>
+
+      <div x-show="saveMsg" x-transition
+        style="margin-top:12px;padding:8px 12px;background:rgba(34,197,94,0.1);
+               border:1px solid rgba(34,197,94,0.2);border-radius:8px;
+               font-size:12px;color:var(--color-success)"
+        x-text="saveMsg"></div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function libraryPage() {
+  const now = new Date();
+  return {
+    shorts: [],
+    totalShorts: 0,
+    page: 1,
+    totalPages: 1,
+    loading: false,
+    filterMonth: `${now.getUTCFullYear()}_${String(now.getUTCMonth()+1).padStart(2,'0')}`,
+    filterChannel: '',
+    filterStatus: '',
+    editShort: null,
+    editData: {},
+    saveMsg: '',
+
+    get availableMonths() {
+      const months = [];
+      const now = new Date();
+      for (let i = 0; i < 6; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const val = `${d.getFullYear()}_${String(d.getMonth()+1).padStart(2,'0')}`;
+        const label = d.toLocaleDateString('en-US', {month:'long',year:'numeric'});
+        months.push({value:val, label});
+      }
+      return months;
+    },
+
+    async init() { await this.load(); },
+
+    async load() {
+      this.loading = true;
+      try {
+        let url = `/api/library/${this.filterMonth}?page=${this.page}&per_page=20`;
+        if (this.filterChannel) url += `&channel=${this.filterChannel}`;
+        if (this.filterStatus) url += `&status=${this.filterStatus}`;
+        const r = await fetch(url);
+        if (r.status === 401) { window.location='/login'; return; }
+        const data = await r.json();
+        this.shorts = data.shorts || [];
+        this.totalShorts = data.total || 0;
+        this.totalPages = data.pages || 1;
+      } catch(e) { console.error(e); }
+      this.loading = false;
+    },
+
+    async selectShort(short) {
+      // Load full detail
+      const r = await fetch(`/api/library/${short.month}/${short.channel}/${short.day}/${short.short_num}`);
+      const detail = await r.json();
+      this.editShort = detail;
+      this.editData = {
+        title: detail.title,
+        description: detail.description,
+        tags: detail.tags,
+      };
+    },
+
+    async saveMetadata() {
+      const s = this.editShort;
+      const r = await fetch(`/api/library/${s.month}/${s.channel}/${s.day}/${s.short_num}/metadata`, {
+        method: 'PATCH',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(this.editData),
+      });
+      if (r.ok) {
+        this.saveMsg = '✅ Saved successfully!';
+        setTimeout(() => { this.saveMsg = ''; this.editShort = null; }, 2000);
+        await this.load();
+      }
+    },
+
+    prevPage() { if (this.page > 1) { this.page--; this.load(); } },
+    nextPage() { if (this.page < this.totalPages) { this.page++; this.load(); } },
+
+    chColor(ch) {
+      return {horror_crime:'#dc2626',manners_fun:'#16a34a',cartoon_stories:'#7c3aed'}[ch]||'#6366f1';
+    },
+    channelEmoji(ch) {
+      return {horror_crime:'🔪',manners_fun:'⭐',cartoon_stories:'🎨'}[ch]||'🎬';
+    },
+    statusBadge(s) {
+      return {ready:'badge-success',pending:'badge-ghost',published:'badge-info'}[s]||'badge-ghost';
+    },
+  }
+}
+</script>
+{% endblock %}

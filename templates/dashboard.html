@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — YouTube Content Factory{% endblock %}
+{% block topbar_title %}🏠 Control Center{% endblock %}
+
+{% block content %}
+<div x-data="dashboard()" x-init="init()">
+
+  <!-- ─── Page Header ──────────────────────────────────────────────── -->
+  <div class="page-header">
+    <h2 class="page-title">Control Center</h2>
+    <p class="page-desc">Real-time overview of your 3-channel content factory</p>
+  </div>
+
+  <!-- ─── KPI Cards ────────────────────────────────────────────────── -->
+  <div class="grid-4" style="margin-bottom:28px">
+
+    <div class="stat-card" style="--accent-grad:linear-gradient(135deg,#6366f1,#8b5cf6)">
+      <span class="stat-icon">📹</span>
+      <p class="stat-label">Ready Videos</p>
+      <p class="stat-value" x-text="summary.total_ready_videos || 0">—</p>
+      <p class="stat-sub">of 180 this month</p>
+    </div>
+
+    <div class="stat-card" style="--accent-grad:linear-gradient(135deg,#22c55e,#16a34a)">
+      <span class="stat-icon">✅</span>
+      <p class="stat-label">Posted This Month</p>
+      <p class="stat-value" x-text="summary.total_posted_this_month || 0">—</p>
+      <p class="stat-sub">across all 3 platforms</p>
+    </div>
+
+    <div class="stat-card" style="--accent-grad:linear-gradient(135deg,#f59e0b,#d97706)">
+      <span class="stat-icon">💰</span>
+      <p class="stat-label">Monthly Cost</p>
+      <p class="stat-value">$11</p>
+      <p class="stat-sub">~₹2.7 per video</p>
+    </div>
+
+    <div class="stat-card" style="--accent-grad:linear-gradient(135deg,#ef4444,#dc2626)">
+      <span class="stat-icon">⚠️</span>
+      <p class="stat-label">Failed Posts</p>
+      <p class="stat-value" x-text="summary.total_failed_this_month || 0">—</p>
+      <p class="stat-sub">this month</p>
+    </div>
+
+  </div>
+
+  <!-- ─── Channel Cards ─────────────────────────────────────────────── -->
+  <div class="grid-3" style="margin-bottom:28px">
+
+    <!-- Horror Crime -->
+    <div class="channel-card" style="--ch-color:#dc2626">
+      <div class="channel-accent"></div>
+      <div style="padding-left:12px">
+        <div class="channel-name">
+          <div class="channel-dot"></div>
+          Horror Crime Stories
+        </div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px">
+          <span style="font-size:24px;font-weight:800" x-text="channels.horror_crime?.ready_videos || 0">0</span>
+          <span style="font-size:13px;color:var(--text-muted)">/ 60 videos ready</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="--fill-color:#dc2626"
+            :style="`width:${channels.horror_crime?.percent_complete || 0}%`"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--text-muted)">
+          <span>9 PM + 11 PM EST</span>
+          <span x-text="`${channels.horror_crime?.percent_complete || 0}%`"></span>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:6px">
+          <span class="badge badge-ghost">🎙️ Orpheus</span>
+          <span class="badge badge-ghost">18–35 US</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manners Fun -->
+    <div class="channel-card" style="--ch-color:#16a34a">
+      <div class="channel-accent"></div>
+      <div style="padding-left:12px">
+        <div class="channel-name">
+          <div class="channel-dot"></div>
+          Learning Manners with Fun
+        </div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px">
+          <span style="font-size:24px;font-weight:800" x-text="channels.manners_fun?.ready_videos || 0">0</span>
+          <span style="font-size:13px;color:var(--text-muted)">/ 60 videos ready</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="--fill-color:#16a34a"
+            :style="`width:${channels.manners_fun?.percent_complete || 0}%`"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--text-muted)">
+          <span>7 AM + 3:30 PM EST</span>
+          <span x-text="`${channels.manners_fun?.percent_complete || 0}%`"></span>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:6px">
+          <span class="badge badge-ghost">🎙️ Luna +30%</span>
+          <span class="badge badge-ghost">Kids 5–10</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cartoon Stories -->
+    <div class="channel-card" style="--ch-color:#7c3aed">
+      <div class="channel-accent"></div>
+      <div style="padding-left:12px">
+        <div class="channel-name">
+          <div class="channel-dot"></div>
+          Cartoon Character Stories
+        </div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px">
+          <span style="font-size:24px;font-weight:800" x-text="channels.cartoon_stories?.ready_videos || 0">0</span>
+          <span style="font-size:13px;color:var(--text-muted)">/ 60 videos ready</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="--fill-color:#7c3aed"
+            :style="`width:${channels.cartoon_stories?.percent_complete || 0}%`"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--text-muted)">
+          <span>3 PM + 7 PM EST</span>
+          <span x-text="`${channels.cartoon_stories?.percent_complete || 0}%`"></span>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:6px">
+          <span class="badge badge-ghost">🎙️ Stella +25%</span>
+          <span class="badge badge-ghost">Kids 5–10</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─── Bulk Run Controls + Recent Activity ───────────────────────── -->
+  <div class="grid-2">
+
+    <!-- Content Generation Panel -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <p class="card-title">🚀 Content Generation (VPS 1)</p>
+          <p class="card-subtitle">Generate scripts, SEO, and audio payload</p>
+        </div>
+        <span class="badge"
+          :class="{
+            'badge-success': runStatus === 'complete',
+            'badge-warning': runStatus === 'running',
+            'badge-error':   runStatus === 'error',
+            'badge-ghost':   runStatus === 'idle' || runStatus === 'stopped'
+          }"
+          x-text="runStatus.toUpperCase()">
+        </span>
+      </div>
+
+      <div x-show="runStatus === 'running'" style="background:var(--bg-glass); border-left:4px solid var(--color-warning); padding:12px; margin-bottom:16px; border-radius:4px;">
+        <span style="font-size:13px; font-weight:600; color:var(--color-warning)">Generation already in progress...</span>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+        <button class="btn btn-primary" @click="generateContent('test3')" :disabled="runStatus === 'running'">
+          3 Test Shorts
+        </button>
+        <button class="btn btn-primary" @click="generateContent('test10')" :disabled="runStatus === 'running'">
+          10 Shorts
+        </button>
+        <button class="btn btn-primary" @click="generateContent('test25')" :disabled="runStatus === 'running'">
+          25 Shorts
+        </button>
+        <button class="btn btn-primary btn-lg" style="width:100%" @click="generateContent('month')" :disabled="runStatus === 'running'">
+          Generate Full Month (180 Shorts)
+        </button>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-bottom:16px;">
+        <input type="number" x-model="customCount" placeholder="Custom Count" class="input" style="width:120px" :disabled="runStatus === 'running'">
+        <button class="btn btn-ghost" @click="generateContent('custom')" :disabled="runStatus === 'running'">
+          Generate Custom
+        </button>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;border-top:1px solid var(--border);padding-top:16px;">
+        <button class="btn btn-danger" @click="stopBulkRun()" :disabled="runStatus !== 'running'">
+          ⏹ Stop Generation
+        </button>
+        <button class="btn btn-ghost" @click="resumeBulkRun()" :disabled="runStatus === 'running'">
+          🔁 Resume Previous Run
+        </button>
+      </div>
+
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">
+        Current Stage
+      </div>
+      <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:12px"
+        x-text="runStageName">Idle</div>
+
+      <!-- Stage progress indicator (VPS 1 is stages 1-5) -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px">
+        <template x-for="s in 5" :key="s">
+          <div style="height:4px;border-radius:2px;transition:background 0.3s"
+            :style="`background: ${s <= runStage ? 'var(--color-success)' : 'var(--bg-elevated)'}`"></div>
+        </template>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:var(--text-muted)">
+        <span>Scrape</span>
+        <span>Ideas</span>
+        <span>Scripts</span>
+        <span>SEO</span>
+        <span>Audio</span>
+      </div>
+
+      <a href="/bulk-run" class="btn btn-ghost btn-sm" style="margin-top:16px;display:inline-flex">
+        View Live Monitor →
+      </a>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card">
+      <div class="card-header">
+        <p class="card-title">📋 Recent Posts</p>
+        <span class="badge badge-ghost" x-text="`${recentPosts.length} recent`"></span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <template x-if="recentPosts.length === 0">
+          <p style="text-align:center;color:var(--text-muted);padding:20px;font-size:13px">
+            No posts yet this month
+          </p>
+        </template>
+        <template x-for="post in recentPosts" :key="post.timestamp">
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;
+                      background:var(--bg-glass);border-radius:8px">
+            <span :style="`color:${channelColor(post.channel)}`">●</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:600;color:var(--text-primary)"
+                x-text="`${post.channel?.replace('_',' ')} · Day ${post.day} · Short ${post.short_num}`"></div>
+              <div style="font-size:11px;color:var(--text-muted)" x-text="post.platform"></div>
+            </div>
+            <span class="badge" :class="post.status === 'success' ? 'badge-success' : 'badge-error'"
+              x-text="post.status"></span>
+          </div>
+        </template>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─── Today's Schedule ──────────────────────────────────────────── -->
+  <div class="card" style="margin-top:20px">
+    <div class="card-header">
+      <p class="card-title">📅 Today's Publishing Schedule (EST)</p>
+      <a href="/calendar" class="btn btn-ghost btn-sm">View Full Calendar →</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px">
+      <template x-for="slot in todaySlots" :key="slot.time_est">
+        <div style="text-align:center;padding:12px 8px;background:var(--bg-elevated);
+                    border-radius:10px;border:1px solid var(--border)">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px" x-text="slot.time_est + ' EST'"></div>
+          <div style="font-size:10px;font-weight:600;margin-bottom:6px"
+            :style="`color:${channelColor(slot.channel)}`"
+            x-text="channelShort(slot.channel)"></div>
+          <div :class="`badge badge-${slotStatusClass(slot.status)}`" x-text="slot.status"></div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function dashboard() {
+  return {
+    channels: {},
+    summary: {},
+    recentPosts: [],
+    todaySlots: [],
+    runStatus: 'idle',
+    runStage: 0,
+    runStageName: 'Idle',
+
+    STAGE_NAMES: {
+      0:'Idle',1:'Scraping Stories',2:'Generating Ideas',
+      3:'Generating Scripts',4:'Generating SEO',5:'Generating Audio',
+      9:'Complete'
+    },
+
+    async init() {
+      await this.load();
+      setInterval(() => this.load(), 15000);
+    },
+
+    async load() {
+      try {
+        const [statusR, summaryR] = await Promise.all([
+          fetch('/api/dashboard/status'),
+          fetch('/api/dashboard/summary'),
+        ]);
+        if (statusR.status === 401) { window.location='/login'; return; }
+        const status = await statusR.json();
+        const summary = await summaryR.json();
+        this.channels = status.channels || {};
+        this.recentPosts = status.recent_posts?.slice(-6).reverse() || [];
+        this.summary = summary;
+        this.runStatus = summary.bulk_run_status || 'idle';
+        this.runStage = summary.bulk_run_stage || 0;
+        this.runStageName = this.STAGE_NAMES[this.runStage] || 'Idle';
+
+        // Build today's slots
+        const now = new Date();
+        const y = now.getUTCFullYear(), m = now.getUTCMonth()+1;
+        const calR = await fetch(`/api/calendar/${y}/${m}`);
+        const cal = await calR.json();
+        const today = cal.calendar?.find(d => d.day === now.getUTCDate());
+        this.todaySlots = today?.slots || [];
+      } catch(e) { console.error(e); }
+    },
+
+    customCount: '',
+
+    async generateContent(size) {
+      const payload = {};
+      if (size === 'custom') {
+        payload.custom_count = parseInt(this.customCount);
+        if (!payload.custom_count) return;
+      }
+      await fetch(`/api/generate/${size}`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      await this.load();
+    },
+
+    async stopBulkRun() {
+      await fetch('/api/bulk-run/stop', {method:'POST'});
+      await this.load();
+    },
+
+    async resumeBulkRun() {
+      await fetch('/api/bulk-run/resume', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({})
+      });
+      await this.load();
+    },
+
+    channelColor(ch) {
+      return {horror_crime:'#dc2626', manners_fun:'#16a34a', cartoon_stories:'#7c3aed'}[ch] || '#6366f1';
+    },
+    channelShort(ch) {
+      return {horror_crime:'Horror', manners_fun:'Manners', cartoon_stories:'Cartoon'}[ch] || ch;
+    },
+    slotStatusClass(s) {
+      return {published:'success',scheduled:'info',failed:'error',empty:'ghost',ready:'warning'}[s] || 'ghost';
+    },
+  }
+}
+</script>
+{% endblock %}

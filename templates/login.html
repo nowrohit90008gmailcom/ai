@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — YouTube Content Factory</title>
+  <meta name="description" content="Sign in to the YouTube Content Factory dashboard.">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.10/dist/cdn.min.js"></script>
+</head>
+<body>
+<div class="login-page" x-data="loginApp()">
+
+  <div class="login-card fade-in">
+    <div class="login-logo">
+      <div class="login-logo-icon">🎬</div>
+      <h1 class="login-title">Content Factory</h1>
+      <p class="login-subtitle">Sign in to your dashboard</p>
+    </div>
+
+    <form @submit.prevent="login">
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <input
+          id="username"
+          class="form-input"
+          type="text"
+          placeholder="admin"
+          x-model="username"
+          autocomplete="username"
+          autofocus
+        >
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input
+          id="password"
+          class="form-input"
+          type="password"
+          placeholder="••••••••"
+          x-model="password"
+          autocomplete="current-password"
+        >
+      </div>
+
+      <!-- Error message -->
+      <div x-show="error" x-transition
+        style="padding:10px 14px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);
+               border-radius:8px;font-size:13px;color:#f87171;margin-bottom:16px">
+        <span x-text="error"></span>
+      </div>
+
+      <button
+        type="submit"
+        id="login-btn"
+        class="btn btn-primary btn-lg"
+        style="width:100%;justify-content:center"
+        :disabled="loading"
+      >
+        <span x-show="!loading">Sign In →</span>
+        <span x-show="loading" style="display:flex;align-items:center;gap:8px">
+          <span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);
+                       border-top-color:white;border-radius:50%" class="spin"></span>
+          Signing in...
+        </span>
+      </button>
+    </form>
+
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);
+                text-align:center;font-size:11px;color:var(--text-muted)">
+      YouTube Content Factory · 3 Channels · 180 Shorts/Month
+    </div>
+  </div>
+
+</div>
+
+<script>
+function loginApp() {
+  return {
+    username: '',
+    password: '',
+    error: '',
+    loading: false,
+
+    async login() {
+      this.error = '';
+      this.loading = true;
+      try {
+        const r = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: this.username, password: this.password })
+        });
+        const data = await r.json();
+        if (r.ok) {
+          window.location = '/dashboard';
+        } else {
+          this.error = data.detail || 'Invalid credentials';
+        }
+      } catch(e) {
+        this.error = 'Connection error. Please try again.';
+      }
+      this.loading = false;
+    }
+  }
+}
+</script>
+</body>
+</html>
