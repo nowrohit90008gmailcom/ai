@@ -1,5 +1,5 @@
 """
-main.py — FastAPI application entry point for the YouTube Content Factory Dashboard.
+main.py — FastAPI application entry point for the ShortForge Dashboard.
 
 Start with:  uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 Production:  uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
@@ -24,7 +24,7 @@ from api.websocket import router as ws_router
 
 # ─── App Init ─────────────────────────────────────────────────────────────────
 app = FastAPI(
-    title="YouTube Content Factory",
+    title="ShortForge",
     description="Automated 3-channel YouTube Shorts production system",
     version="1.0.0",
     docs_url="/api/docs" if DEBUG else None,
@@ -94,7 +94,7 @@ async def settings_page(request: Request):
 async def on_startup():
     from modules.logger import get_logger
     log = get_logger("main")
-    log.info("🎬 YouTube Content Factory Dashboard started")
+    log.info("🎬 ShortForge Dashboard started")
     # Ensure log directories exist
     from config import LOGS_DIR, DATA_DIR
     LOGS_DIR.mkdir(parents=True, exist_ok=True)

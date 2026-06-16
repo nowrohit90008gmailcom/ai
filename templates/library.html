@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Content Library — YouTube Content Factory{% endblock %}
+{% block title %}Content Library — ShortForge{% endblock %}
 {% block topbar_title %}🗂️ Content Library{% endblock %}
 
 {% block content %}
@@ -75,9 +75,9 @@
 
           <!-- Assets available -->
           <div style="display:flex;gap:6px;margin-top:10px">
-            <span x-show="short.has_video"   class="badge badge-success" style="font-size:10px">🎬</span>
-            <span x-show="short.has_audio"   class="badge badge-info"    style="font-size:10px">🎙️</span>
-            <span x-show="short.has_thumbnail" class="badge badge-ghost" style="font-size:10px">🖼️</span>
+            <span x-show="short.has_video"   class="badge badge-success" style="font-size:10px"><i class="fa-solid fa-clapperboard"></i></span>
+            <span x-show="short.has_audio"   class="badge badge-info"    style="font-size:10px"><i class="fa-solid fa-microphone"></i></span>
+            <span x-show="short.has_thumbnail" class="badge badge-ghost" style="font-size:10px"><i class="fa-solid fa-image"></i></span>
           </div>
         </div>
       </div>
@@ -90,7 +90,7 @@
         <div style="font-size:15px;font-weight:600">No videos yet</div>
         <div style="font-size:13px;margin-top:4px">Run a bulk generation to create content</div>
         <a href="/bulk-run" class="btn btn-primary" style="margin-top:16px;display:inline-flex">
-          🚀 Start Bulk Run
+          <i class="fa-solid fa-rocket"></i> Start Bulk Run
         </a>
       </div>
     </template>
@@ -145,7 +145,7 @@
         style="margin-top:12px;padding:8px 12px;background:rgba(34,197,94,0.1);
                border:1px solid rgba(34,197,94,0.2);border-radius:8px;
                font-size:12px;color:var(--color-success)"
-        x-text="saveMsg"></div>
+        x-html="saveMsg"></div>
     </div>
   </div>
 
@@ -219,7 +219,7 @@ function libraryPage() {
         body: JSON.stringify(this.editData),
       });
       if (r.ok) {
-        this.saveMsg = '✅ Saved successfully!';
+        this.saveMsg = '<i class="fa-solid fa-check"></i> Saved successfully!';
         setTimeout(() => { this.saveMsg = ''; this.editShort = null; }, 2000);
         await this.load();
       }
@@ -232,7 +232,7 @@ function libraryPage() {
       return {horror_crime:'#dc2626',manners_fun:'#16a34a',cartoon_stories:'#7c3aed'}[ch]||'#6366f1';
     },
     channelEmoji(ch) {
-      return {horror_crime:'🔪',manners_fun:'⭐',cartoon_stories:'🎨'}[ch]||'🎬';
+      return {horror_crime:'<i class="fa-solid fa-ghost"></i>',manners_fun:'<i class="fa-solid fa-star"></i>',cartoon_stories:'<i class="fa-solid fa-palette"></i>'}[ch]||'<i class="fa-solid fa-clapperboard"></i>';
     },
     statusBadge(s) {
       return {ready:'badge-success',pending:'badge-ghost',published:'badge-info'}[s]||'badge-ghost';

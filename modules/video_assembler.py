@@ -113,11 +113,12 @@ class VideoAssembler:
         results = {"success": 0, "failed": 0}
         short_dirs = sorted(
             d for d in channel_dir.iterdir()
-            if d.is_dir() and "day_" in d.name
+            if d.is_dir() and ("short_" in d.name or "day_" in d.name)
         )
         for i, short_dir in enumerate(short_dirs):
-            script = (scripts or [])[i] if scripts else ""
-            seo    = (seos or [])[i] if seos else {}
+            # FIX BUG 7: guard against index out of range if lists are shorter than dirs
+            script = scripts[i] if scripts and i < len(scripts) else ""
+            seo    = seos[i]    if seos    and i < len(seos)    else {}
             ok = self.assemble(short_dir, script=script, seo=seo)
             results["success" if ok else "failed"] += 1
 

@@ -67,7 +67,7 @@ class GpuMonitor:
     def _avg(self, lst: list) -> float:
         return sum(lst) / len(lst) if lst else 0.0
 
-    def generate_report(self, total_shorts: int, total_images: int, total_clips: int, output_path: Path):
+    def generate_report(self, total_shorts: int, total_images: int, total_clips: int, output_path: Path, month: str = ""):
         """Generate benchmark_report.json"""
         total_time_hours = (time.time() - self.start_time) / 3600 if self.start_time else 0
         total_time_mins = total_time_hours * 60
@@ -76,10 +76,13 @@ class GpuMonitor:
         # Estimate monthly runtime based on target of 180 shorts
         estimated_monthly_hours = (avg_short_time * 180) / 3600 if avg_short_time > 0 else 0
         
-        # Scan failed_shorts directory for stats
+        # FIX BUG 4: include month subfolder so the path matches where factory_runner writes failed shorts
         failed_count = 0
         failed_stages = {}
-        failed_dir = Path("/workspace/output/failed_shorts")
+        if month:
+            failed_dir = Path(f"/workspace/output/failed_shorts/{month}")
+        else:
+            failed_dir = Path("/workspace/output/failed_shorts")
         if failed_dir.exists():
             for ckpt in failed_dir.rglob("checkpoint.json"):
                 failed_count += 1

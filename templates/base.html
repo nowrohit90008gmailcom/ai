@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}YouTube Content Factory{% endblock %}</title>
+  <title>{% block title %}ShortForge{% endblock %}</title>
   <meta name="description" content="Automated YouTube Shorts content factory — 3 channels, 180 videos/month.">
 
   <!-- Styles -->
@@ -15,6 +15,9 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 
+  <!-- FontAwesome for Premium Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
   {% block head %}{% endblock %}
 </head>
 <body x-data="app()" x-init="init()">
@@ -24,21 +27,21 @@
   <!-- ─── Sidebar ─────────────────────────────────────────────────── -->
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <div class="logo-icon">🎬</div>
-      <h1>Content Factory</h1>
-      <p>3 Channels · 180 Shorts/Mo</p>
+      <div class="logo-icon"><i class="fa-solid fa-clapperboard"></i></div>
+      <h1>ShortForge</h1>
+      <p>Developed by Rohit</p>
     </div>
 
     <nav class="sidebar-nav">
       <p class="nav-section-label">Control</p>
 
       <a href="/dashboard" class="nav-item {% if request.url.path == '/dashboard' %}active{% endif %}">
-        <span class="nav-icon">🏠</span>
+        <span class="nav-icon"><i class="fa-solid fa-house"></i></span>
         Dashboard
       </a>
 
       <a href="/bulk-run" class="nav-item {% if request.url.path == '/bulk-run' %}active{% endif %}">
-        <span class="nav-icon">🚀</span>
+        <span class="nav-icon"><i class="fa-solid fa-rocket"></i></span>
         Bulk Run
         <span x-show="runStatus === 'running'" class="badge badge-success" style="margin-left:auto;font-size:10px">LIVE</span>
       </a>
@@ -46,29 +49,29 @@
       <p class="nav-section-label">Content</p>
 
       <a href="/calendar" class="nav-item {% if request.url.path == '/calendar' %}active{% endif %}">
-        <span class="nav-icon">📅</span>
+        <span class="nav-icon"><i class="fa-regular fa-calendar"></i></span>
         Calendar
       </a>
 
       <a href="/library" class="nav-item {% if request.url.path == '/library' %}active{% endif %}">
-        <span class="nav-icon">🗂️</span>
+        <span class="nav-icon"><i class="fa-solid fa-folder-open"></i></span>
         Library
       </a>
 
       <a href="/analytics" class="nav-item {% if request.url.path == '/analytics' %}active{% endif %}">
-        <span class="nav-icon">📊</span>
+        <span class="nav-icon"><i class="fa-solid fa-chart-simple"></i></span>
         Analytics
       </a>
 
       <p class="nav-section-label">System</p>
 
       <a href="/settings" class="nav-item {% if request.url.path == '/settings' %}active{% endif %}">
-        <span class="nav-icon">⚙️</span>
+        <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
         Settings
       </a>
 
       <button class="nav-item" onclick="logout()" style="width:100%;text-align:left">
-        <span class="nav-icon">🚪</span>
+        <span class="nav-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></span>
         Logout
       </button>
     </nav>
@@ -89,6 +92,10 @@
     <header class="topbar">
       <span class="topbar-title">{% block topbar_title %}Dashboard{% endblock %}</span>
       <div class="topbar-right">
+        <div id="global-toast" class="global-toast" x-data="{msg:''}"
+         @show-global.window="msg = $event.detail; setTimeout(() => msg='', 3000)"
+         x-show="msg" x-transition x-html="msg">
+        </div>
         <div class="topbar-badge">
           <span class="status-dot"></span>
           <span x-text="nextPostLabel">Loading...</span>

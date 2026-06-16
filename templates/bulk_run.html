@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Bulk Run Monitor — YouTube Content Factory{% endblock %}
+{% block title %}Bulk Run Monitor — ShortForge{% endblock %}
 {% block topbar_title %}🚀 Bulk Run Live Monitor{% endblock %}
 
 {% block content %}
@@ -19,9 +19,9 @@
       <span style="color:var(--text-muted);font-size:13px;margin-left:8px" x-text="runMonth"></span>
     </div>
     <div style="margin-left:auto;display:flex;gap:8px">
-      <button class="btn btn-primary" id="btn-start" @click="start()" :disabled="isRunning">🚀 Start New Run</button>
-      <button class="btn btn-danger" @click="stop()" :disabled="!isRunning">⏹ Stop</button>
-      <button class="btn btn-ghost" @click="retry()">🔁 Resume</button>
+      <button class="btn btn-primary" id="btn-start" @click="start()" :disabled="isRunning"><i class="fa-solid fa-rocket"></i> Start New Run</button>
+      <button class="btn btn-danger" @click="stop()" :disabled="!isRunning"><i class="fa-solid fa-stop"></i> Stop</button>
+      <button class="btn btn-ghost" @click="retry()"><i class="fa-solid fa-rotate-right"></i> Resume</button>
     </div>
   </div>
 
@@ -104,7 +104,7 @@
   <!-- ─── Live Log Terminal ─────────────────────────────────────────── -->
   <div class="card">
     <div class="card-header">
-      <p class="card-title">🖥️ Live Log</p>
+      <p class="card-title"><i class="fa-solid fa-terminal"></i> Live Log</p>
       <div style="display:flex;align-items:center;gap:8px">
         <div class="status-dot" x-show="wsConnected"></div>
         <span style="font-size:12px;color:var(--text-muted)" x-text="wsConnected ? 'WebSocket Connected' : 'Disconnected'"></span>
@@ -144,20 +144,20 @@ function bulkRunMonitor() {
     channelProgress: {},
 
     stages: [
-      {name:'Scraping',      icon:'🕷️',  status:'waiting', percent:0, duration:''},
-      {name:'Scripts',       icon:'✍️',  status:'waiting', percent:0, duration:''},
-      {name:'SEO',           icon:'🔍', status:'waiting', percent:0, duration:''},
-      {name:'Audio',         icon:'🎙️', status:'waiting', percent:0, duration:''},
-      {name:'Images',        icon:'🖼️', status:'waiting', percent:0, duration:''},
-      {name:'Video Clips',   icon:'🎬', status:'waiting', percent:0, duration:''},
-      {name:'Assembly',      icon:'⚙️', status:'waiting', percent:0, duration:''},
-      {name:'Upload',        icon:'☁️', status:'waiting', percent:0, duration:''},
+      {name:'Scraping',      icon:'<i class="fa-solid fa-cloud-arrow-down"></i>',  status:'waiting', percent:0, duration:''},
+      {name:'Scripts',       icon:'<i class="fa-solid fa-pen-nib"></i>',  status:'waiting', percent:0, duration:''},
+      {name:'SEO',           icon:'<i class="fa-solid fa-magnifying-glass"></i>', status:'waiting', percent:0, duration:''},
+      {name:'Audio',         icon:'<i class="fa-solid fa-microphone"></i>', status:'waiting', percent:0, duration:''},
+      {name:'Images',        icon:'<i class="fa-solid fa-image"></i>', status:'waiting', percent:0, duration:''},
+      {name:'Video Clips',   icon:'<i class="fa-solid fa-clapperboard"></i>', status:'waiting', percent:0, duration:''},
+      {name:'Assembly',      icon:'<i class="fa-solid fa-gear"></i>', status:'waiting', percent:0, duration:''},
+      {name:'Upload',        icon:'<i class="fa-solid fa-cloud-arrow-up"></i>', status:'waiting', percent:0, duration:''},
     ],
 
     get isRunning() { return this.runStatus === 'running'; },
     get statusLabel() {
-      return {idle:'Idle — ready to start',running:'Running',complete:'Complete ✅',
-              error:'Error ❌',stopped:'Stopped'}[this.runStatus] || this.runStatus;
+      return {idle:'Idle — ready to start',running:'Running',complete:'Complete <i class="fa-solid fa-check"></i>',
+              error:'Error <i class="fa-solid fa-xmark"></i>',stopped:'Stopped'}[this.runStatus] || this.runStatus;
     },
     get statusDotClass() {
       return this.runStatus === 'running' ? 'status-dot'

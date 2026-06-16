@@ -12,6 +12,7 @@ Features:
 import argparse
 import json
 import shutil
+import subprocess
 import sys
 import threading
 import time
@@ -66,6 +67,7 @@ class FactoryRunner:
         # Counters for benchmark
         self.total_images = 0
         self.total_clips = 0
+        self.completed_count = 0  # FIX BUG 2: track completed shorts explicitly
 
         # Heartbeat tracking
         self.heartbeats = {}
@@ -267,10 +269,10 @@ class FactoryRunner:
             now = time.time()
             for worker, last_beat in self.heartbeats.items():
                 if now - last_beat > 1800: # 30 minutes
-                    log.error(f"HEARTBEAT STALL: {worker} hasn't made progress in 30 minutes! Alerting and restarting process.")
+                    log.error(f"HEARTBEAT STALL: {worker} hasn't made progress in 30 minutes! Exiting for systemd restart.")
                     with open("/workspace/failures.log", "a") as f:
                         f.write(f"{datetime.utcnow().isoformat()} | SYSTEM | HEARTBEAT | 0 | {worker} stalled for >30m\n")
-                    subprocess.run(["sudo", "systemctl", "restart", "factory_runner"])  # Example recovery action
+                    # FIX BUG 6: just exit — systemd Restart=on-failure handles restart
                     sys.exit(1)
 
     # --- Workers ---
@@ -314,7 +316,8 @@ class FactoryRunner:
                 duration = self._get_audio_duration(audio_path)
                 import math
                 target_dur = TARGET_SCENE_DURATION.get(channel, 5.0)
-                num_scenes = min(MAX_SCENES, max(8, math.ceil(duration / target_dur)))
+                # FIX BUG 8: use min of 3 instead of 8 to avoid wasting GPU on short audio
+                num_scenes = min(MAX_SCENES, max(3, math.ceil(duration / target_dur)))
                 
                 scenes_dir = short_dir / "scenes"
                 self.ig.generate_scenes(channel, script, scenes_dir, num_scenes=num_scenes, idea=idea)
@@ -345,17 +348,21 @@ class FactoryRunner:
                 duration = self._get_audio_duration(audio_path)
                 import math
                 target_dur = TARGET_SCENE_DURATION.get(channel, 5.0)
-                num_scenes = min(MAX_SCENES, max(8, math.ceil(duration / target_dur)))
+                # FIX BUG 8: consistent with image_worker
+                num_scenes = min(MAX_SCENES, max(3, math.ceil(duration / target_dur)))
                 
                 scenes_dir = short_dir / "scenes"
                 clips_dir = short_dir / "clips"
                 self.vg.animate_scenes(channel, scenes_dir, clips_dir, num_scenes=num_scenes, audio_duration_sec=duration)
                 self.total_clips += num_scenes
                 
+                # FIX BUG 5: clips are already written to clips_dir by VideoGenerator.
+                # Move them to short_dir root so VideoAssembler.assemble() can find them
+                # with short_dir.glob("clip_*.mp4") — but do NOT duplicate; move instead.
                 for clip in sorted(clips_dir.glob("clip_*.mp4")):
                     target = short_dir / clip.name
                     if not target.exists():
-                        target.write_bytes(clip.read_bytes())
+                        clip.rename(target)
                         
                 self.monitor.record_timing("video_gen", time.time() - t0)
                 self._set_checkpoint(short_dir, JobState.VIDEOS_DONE)
@@ -422,6 +429,9 @@ class FactoryRunner:
                     
                     self._set_checkpoint(short_dir, JobState.COMPLETED)
                     
+                    # FIX BUG 2: track completed count for benchmark report
+                    self.completed_count += 1
+                    
                     # Clean up local files, but KEEP checkpoint.json
                     for file_path in short_dir.iterdir():
                         if file_path.name != "checkpoint.json":
@@ -446,8 +456,14 @@ class FactoryRunner:
     def _shutdown_flow(self):
         self.monitor.stop()
         report_path = Path("/workspace/benchmark_report.json")
-        completed_shorts = len(self.state["completed"]) if hasattr(self, "state") and "completed" in self.state else len([p for p in self.workspace.glob("*/*/checkpoint.json") if self._get_checkpoint(p.parent) == JobState.COMPLETED])
-        self.monitor.generate_report(completed_shorts, self.total_images, self.total_clips, report_path)
+        # FIX BUG 2: use self.completed_count instead of non-existent self.state
+        self.monitor.generate_report(
+            self.completed_count,
+            self.total_images,
+            self.total_clips,
+            report_path,
+            month=self.month
+        )
         
         log.info("Uploading final benchmark report...")
         subprocess.run(["rclone", "copy", str(report_path), f"{RCLONE_REMOTE}:youtube_factory/month_{self.month}/"])

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Settings — YouTube Content Factory{% endblock %}
-{% block topbar_title %}⚙️ Settings{% endblock %}
+{% block title %}Settings — ShortForge{% endblock %}
+{% block topbar_title %}<i class="fa-solid fa-gear"></i> Settings{% endblock %}
 
 {% block content %}
 <div x-data="settingsPage()" x-init="init()">
@@ -23,7 +23,7 @@
             x-text="key.replace('_',' ').toUpperCase()"></div>
           <div style="display:flex;align-items:center;gap:8px">
             <span :class="val === 'NOT_SET' ? 'badge-error' : 'badge-success'" class="badge"
-              x-text="val === 'NOT_SET' ? '❌ Not Set' : '✅ Configured'"></span>
+              x-html="val === 'NOT_SET' ? '<i class=\'fa-solid fa-xmark\'></i> Not Set' : '<i class=\'fa-solid fa-check\'></i> Configured'"></span>
           </div>
           <div x-show="val !== 'NOT_SET'"
             style="font-size:11px;color:var(--text-muted);margin-top:6px;
@@ -32,7 +32,7 @@
       </template>
     </div>
     <p style="font-size:12px;color:var(--text-muted);margin-top:12px">
-      ℹ️ Edit API keys in your <code style="background:var(--bg-elevated);padding:2px 6px;border-radius:4px">.env</code> file on the VPS, then restart the service.
+      <i class="fa-solid fa-circle-info"></i> Edit API keys in your <code style="background:var(--bg-elevated);padding:2px 6px;border-radius:4px">.env</code> file on the VPS, then restart the service.
     </p>
   </div>
 
@@ -53,9 +53,9 @@
           </div>
           <div style="display:flex;gap:8px">
             <span class="badge" :class="ch.youtube_connected ? 'badge-success' : 'badge-error'"
-              x-text="ch.youtube_connected ? '✅ YouTube' : '❌ YouTube'"></span>
+              x-html="ch.youtube_connected ? '<i class=\'fa-solid fa-check\'></i> YouTube' : '<i class=\'fa-solid fa-xmark\'></i> YouTube'"></span>
             <span class="badge" :class="ch.meta_connected ? 'badge-success' : 'badge-ghost'"
-              x-text="ch.meta_connected ? '✅ Meta' : '○ Meta'"></span>
+              x-html="ch.meta_connected ? '<i class=\'fa-solid fa-check\'></i> Meta' : '<i class=\'fa-regular fa-circle\'></i> Meta'"></span>
           </div>
         </div>
       </template>
@@ -128,7 +128,7 @@
         <button class="btn btn-ghost btn-sm" @click="testNotification()">🧪 Send Test</button>
       </div>
       <div x-show="notifMsg" x-transition style="margin-top:10px;font-size:12px;color:var(--color-success)"
-        x-text="notifMsg"></div>
+        x-html="notifMsg"></div>
     </div>
 
     <div class="card">
@@ -137,20 +137,20 @@
       </div>
       <div style="margin-bottom:12px">
         <span class="badge" :class="cronInstalled ? 'badge-success' : 'badge-error'"
-          x-text="cronInstalled ? '✅ Cron Jobs Installed' : '❌ Not Installed'"></span>
+          x-html="cronInstalled ? '<i class=\'fa-solid fa-check\'></i> Cron Jobs Installed' : '<i class=\'fa-solid fa-xmark\'></i> Not Installed'"></span>
       </div>
       <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6">
         6 posting jobs + 1 analytics job.<br>
         Times based on UTC (EST + 5h).
       </div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-primary btn-sm" @click="installCron()">⚙️ Install Crons</button>
-        <button class="btn btn-ghost btn-sm" @click="checkCron()">🔍 Check Status</button>
+        <button class="btn btn-primary btn-sm" @click="installCron()"><i class="fa-solid fa-gear"></i> Install Crons</button>
+        <button class="btn btn-ghost btn-sm" @click="checkCron()"><i class="fa-solid fa-magnifying-glass"></i> Check Status</button>
       </div>
       <div x-show="cronMsg" x-transition
         style="margin-top:10px;font-size:11px;color:var(--text-muted);
-               font-family:'JetBrains Mono',monospace;white-space:pre-wrap"
-        x-text="cronMsg"></div>
+               padding:8px;background:var(--bg-elevated);border-radius:4px"
+        x-html="cronMsg"></div>
     </div>
 
   </div>
@@ -196,7 +196,7 @@ function settingsPage() {
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify(this.flags),
       });
-      this.showGlobal('✅ Platform settings saved');
+      this.showGlobal('<i class="fa-solid fa-check"></i> Platform settings saved');
     },
 
     async saveNotifications() {
@@ -205,13 +205,13 @@ function settingsPage() {
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify(this.notifications),
       });
-      this.notifMsg = '✅ Saved';
+      this.notifMsg = '<i class="fa-solid fa-check"></i> Saved';
       setTimeout(() => this.notifMsg = '', 2000);
     },
 
     async testNotification() {
       await fetch('/api/settings/test-notification', {method:'POST'});
-      this.notifMsg = '✅ Test sent!';
+      this.notifMsg = '<i class="fa-solid fa-check"></i> Test sent!';
       setTimeout(() => this.notifMsg = '', 3000);
     },
 

@@ -13,8 +13,8 @@ APP_DIR="/app"
 DOMAIN="${DOMAIN:-yourdomain.com}"    # Set this before running
 VENV_DIR="$APP_DIR/venv"
 
-echo "🚀 YouTube Content Factory — VPS 1 Setup"
-echo "=========================================="
+echo "🚀 ShortForge — VPS 1 Setup"
+echo "=============================="
 
 # ─── 1. System updates ────────────────────────────────────────────────────────
 echo "📦 Updating system packages..."

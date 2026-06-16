@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Dashboard — YouTube Content Factory{% endblock %}
+{% block title %}Dashboard — ShortForge{% endblock %}
 {% block topbar_title %}🏠 Control Center{% endblock %}
 
 {% block content %}
@@ -7,36 +7,36 @@
 
   <!-- ─── Page Header ──────────────────────────────────────────────── -->
   <div class="page-header">
-    <h2 class="page-title">Control Center</h2>
-    <p class="page-desc">Real-time overview of your 3-channel content factory</p>
+    <h2 class="page-title">Welcome back, Rohit! 👋</h2>
+    <p class="page-desc">Real-time overview of your ShortForge operations</p>
   </div>
 
   <!-- ─── KPI Cards ────────────────────────────────────────────────── -->
   <div class="grid-4" style="margin-bottom:28px">
 
     <div class="stat-card" style="--accent-grad:linear-gradient(135deg,#6366f1,#8b5cf6)">
-      <span class="stat-icon">📹</span>
+      <span class="stat-icon"><i class="fa-solid fa-video"></i></span>
       <p class="stat-label">Ready Videos</p>
       <p class="stat-value" x-text="summary.total_ready_videos || 0">—</p>
       <p class="stat-sub">of 180 this month</p>
     </div>
 
     <div class="stat-card" style="--accent-grad:linear-gradient(135deg,#22c55e,#16a34a)">
-      <span class="stat-icon">✅</span>
+      <span class="stat-icon"><i class="fa-solid fa-check-circle"></i></span>
       <p class="stat-label">Posted This Month</p>
       <p class="stat-value" x-text="summary.total_posted_this_month || 0">—</p>
       <p class="stat-sub">across all 3 platforms</p>
     </div>
 
     <div class="stat-card" style="--accent-grad:linear-gradient(135deg,#f59e0b,#d97706)">
-      <span class="stat-icon">💰</span>
+      <span class="stat-icon"><i class="fa-solid fa-sack-dollar"></i></span>
       <p class="stat-label">Monthly Cost</p>
       <p class="stat-value">$11</p>
       <p class="stat-sub">~₹2.7 per video</p>
     </div>
 
     <div class="stat-card" style="--accent-grad:linear-gradient(135deg,#ef4444,#dc2626)">
-      <span class="stat-icon">⚠️</span>
+      <span class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
       <p class="stat-label">Failed Posts</p>
       <p class="stat-value" x-text="summary.total_failed_this_month || 0">—</p>
       <p class="stat-sub">this month</p>
@@ -68,7 +68,7 @@
           <span x-text="`${channels.horror_crime?.percent_complete || 0}%`"></span>
         </div>
         <div style="margin-top:12px;display:flex;gap:6px">
-          <span class="badge badge-ghost">🎙️ Orpheus</span>
+          <span class="badge badge-ghost"><i class="fa-solid fa-microphone-lines"></i> Orpheus</span>
           <span class="badge badge-ghost">18–35 US</span>
         </div>
       </div>
@@ -95,7 +95,7 @@
           <span x-text="`${channels.manners_fun?.percent_complete || 0}%`"></span>
         </div>
         <div style="margin-top:12px;display:flex;gap:6px">
-          <span class="badge badge-ghost">🎙️ Luna +30%</span>
+          <span class="badge badge-ghost"><i class="fa-solid fa-microphone-lines"></i> Luna +30%</span>
           <span class="badge badge-ghost">Kids 5–10</span>
         </div>
       </div>
@@ -122,7 +122,7 @@
           <span x-text="`${channels.cartoon_stories?.percent_complete || 0}%`"></span>
         </div>
         <div style="margin-top:12px;display:flex;gap:6px">
-          <span class="badge badge-ghost">🎙️ Stella +25%</span>
+          <span class="badge badge-ghost"><i class="fa-solid fa-microphone-lines"></i> Stella +25%</span>
           <span class="badge badge-ghost">Kids 5–10</span>
         </div>
       </div>
@@ -137,7 +137,7 @@
     <div class="card">
       <div class="card-header">
         <div>
-          <p class="card-title">🚀 Content Generation (VPS 1)</p>
+          <p class="card-title"><i class="fa-solid fa-rocket"></i> Content Generation (VPS 1)</p>
           <p class="card-subtitle">Generate scripts, SEO, and audio payload</p>
         </div>
         <span class="badge"
@@ -179,10 +179,10 @@
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;border-top:1px solid var(--border);padding-top:16px;">
         <button class="btn btn-danger" @click="stopBulkRun()" :disabled="runStatus !== 'running'">
-          ⏹ Stop Generation
+          <i class="fa-solid fa-stop"></i> Stop Generation
         </button>
         <button class="btn btn-ghost" @click="resumeBulkRun()" :disabled="runStatus === 'running'">
-          🔁 Resume Previous Run
+          <i class="fa-solid fa-rotate-right"></i> Resume Previous Run
         </button>
       </div>
 
@@ -215,7 +215,7 @@
     <!-- Recent Activity -->
     <div class="card">
       <div class="card-header">
-        <p class="card-title">📋 Recent Posts</p>
+        <p class="card-title"><i class="fa-solid fa-list-check"></i> Recent Posts</p>
         <span class="badge badge-ghost" x-text="`${recentPosts.length} recent`"></span>
       </div>
 
@@ -246,7 +246,7 @@
   <!-- ─── Today's Schedule ──────────────────────────────────────────── -->
   <div class="card" style="margin-top:20px">
     <div class="card-header">
-      <p class="card-title">📅 Today's Publishing Schedule (EST)</p>
+      <p class="card-title"><i class="fa-regular fa-calendar"></i> Today's Publishing Schedule (EST)</p>
       <a href="/calendar" class="btn btn-ghost btn-sm">View Full Calendar →</a>
     </div>
     <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px">

@@ -25,7 +25,7 @@ class Notifier:
     """Sends push notifications and emails."""
 
     # ─── ntfy.sh push notifications ──────────────────────────────────────────
-    def push(self, message: str, title: str = "📺 YouTube Factory",
+    def push(self, message: str, title: str = "ShortForge",
               priority: str = "default", tags: list[str] = None):
         """
         Send a push notification via ntfy.sh.
@@ -57,7 +57,7 @@ class Notifier:
             msg = MIMEMultipart("alternative")
             msg["From"]    = GMAIL_ADDRESS
             msg["To"]      = NOTIFY_EMAIL
-            msg["Subject"] = f"[YT Factory] {subject}"
+            msg["Subject"] = f"[ShortForge] {subject}"
 
             mime_type = "html" if html else "plain"
             msg.attach(MIMEText(body, mime_type))

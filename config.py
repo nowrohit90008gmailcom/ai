@@ -1,5 +1,5 @@
 """
-config.py — Central configuration for the YouTube Content Factory.
+config.py — Central configuration for ShortForge.
 
 All API keys, channel configs, paths, schedules, and constants live here.
 Fill in the values marked with YOUR_* before running the system.
@@ -274,3 +274,30 @@ DOMAIN = os.getenv("DOMAIN", "localhost")   # Your VPS domain or IP
 # ─── Rate Limiting (brute-force protection) ───────────────────────────────────
 MAX_FAILED_LOGINS  = 5
 LOGIN_LOCKOUT_SECS = 900  # 15 minutes
+
+# ─── FIX BUG 12: Startup API Key Validation ──────────────────────────────────
+# Fail immediately on startup if critical keys are still placeholders.
+# This prevents silent failures deep in the pipeline after GPU hours are spent.
+import sys as _sys
+
+_MISSING_KEYS = []
+if CEREBRAS_API_KEY in ("YOUR_CEREBRAS_KEY", ""):
+    _MISSING_KEYS.append("CEREBRAS_API_KEY")
+if DEEPGRAM_API_KEY in ("YOUR_DEEPGRAM_KEY", ""):
+    _MISSING_KEYS.append("DEEPGRAM_API_KEY")
+if DASHBOARD_PASSWORD in ("YOUR_SECURE_PASSWORD", ""):
+    _MISSING_KEYS.append("DASHBOARD_PASSWORD")
+if JWT_SECRET_KEY in ("YOUR_RANDOM_JWT_SECRET_32_CHARS_MIN", ""):
+    _MISSING_KEYS.append("JWT_SECRET_KEY")
+
+if _MISSING_KEYS:
+    print("\n" + "="*60)
+    print("  ShortForge STARTUP ERROR: Missing required .env values")
+    print("="*60)
+    for _k in _MISSING_KEYS:
+        print(f"  ✗ {_k} is not set")
+    print("\n  Edit your .env file and set these values, then restart.")
+    print("="*60 + "\n")
+    _sys.exit(1)
+
+del _sys, _MISSING_KEYS
