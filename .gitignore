@@ -6,6 +6,11 @@ __pycache__/
 venv/
 ENV/
 
+# ── SECURITY: Never commit real secrets ──
+.env
+*.env
+!.env.example
+
 # Project specifics
 data/
 output/
