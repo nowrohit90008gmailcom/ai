@@ -1,74 +1,132 @@
+"""
+modules/cerebras_client.py — Centralized Cerebras API wrapper with:
+  1. Multiple API key round-robin rotation
+  2. Exponential backoff retry logic (up to 5 retries)
+  3. Reasoning model support (gpt-oss-120b / zai-glm-4.7)
+     — These models return a 'reasoning_content' field which we strip
+       from the final output, keeping only the clean user-facing response.
+"""
+
 import time
-import json
-from config import CEREBRAS_API_KEYS
+from config import CEREBRAS_API_KEYS, CEREBRAS_MODEL
 from modules.logger import get_logger
 
 log = get_logger("cerebras_client")
+
+# Reasoning models return reasoning_content alongside message.content.
+# We detect them by name so we know to extract only the final answer.
+REASONING_MODELS = {"gpt-oss-120b", "zai-glm-4.7"}
+
 
 class CerebrasWrapper:
     """
     A wrapper around the Cerebras client that handles:
       1. Multiple API keys with round-robin rotation
       2. Exponential backoff and retry logic (up to 5 retries)
+      3. Reasoning model response extraction (strips chain-of-thought)
+
+    --- HOW TO USE MULTIPLE API KEYS ---
+    In your .env file, separate keys with commas:
+        CEREBRAS_API_KEY=key1,key2,key3
+
+    The wrapper will automatically distribute requests across all keys,
+    and rotate to the next key immediately on rate-limit (429) errors.
     """
-    
+
     def __init__(self):
         self.keys = CEREBRAS_API_KEYS
         self.current_key_idx = 0
         self.clients = []
-        
+
         try:
             from cerebras.cloud.sdk import Cerebras
             for key in self.keys:
-                if "YOUR_" not in key:
-                    self.clients.append(Cerebras(api_key=key))
+                stripped = key.strip()
+                if stripped and "YOUR_" not in stripped:
+                    self.clients.append(Cerebras(api_key=stripped))
+            if self.clients:
+                log.info(f"CerebrasWrapper: {len(self.clients)} API key(s) loaded.")
+            else:
+                log.warning("CerebrasWrapper: No valid API keys found — running in mock mode.")
         except ImportError:
             log.warning("cerebras-cloud-sdk not installed — using mock mode")
             self.clients = []
-            
+
     def _rotate_key(self):
-        """Rotates to the next available API key."""
-        if not self.clients:
+        """Round-robins to the next available API key."""
+        if len(self.clients) < 2:
             return
         old_idx = self.current_key_idx
         self.current_key_idx = (self.current_key_idx + 1) % len(self.clients)
-        log.info(f"Rotating Cerebras API key (index {old_idx} -> {self.current_key_idx})")
+        log.info(f"Rotating Cerebras API key: key#{old_idx} → key#{self.current_key_idx}")
 
-    def generate_completion(self, model: str, messages: list, max_tokens: int, temperature: float, retries: int = 5) -> str:
+    @staticmethod
+    def _extract_content(response) -> str:
         """
-        Executes a chat completion request with built-in retries and key rotation.
+        Safely extracts the final user-facing text from the response.
+        For reasoning models (gpt-oss-120b / zai-glm-4.7), the model
+        returns both 'reasoning_content' (internal thinking) and 'content'
+        (the clean final answer). We always return only 'content'.
+        """
+        msg = response.choices[0].message
+        return (msg.content or "").strip()
+
+    def generate_completion(
+        self,
+        model: str,
+        messages: list,
+        max_tokens: int,
+        temperature: float,
+        retries: int = 5,
+    ) -> str:
+        """
+        Executes a chat completion request with:
+          - Built-in retry loop (default 5 attempts)
+          - Automatic key rotation on rate-limit / auth errors
+          - Exponential backoff: 2, 4, 8, 16 seconds between retries
+          - Reasoning model response extraction
+
+        Returns the text content string.
+        Raises the last exception if all retries fail.
         """
         if not self.clients:
-            log.warning("No Cerebras clients available. Returning mock response.")
+            log.warning("No Cerebras clients available — returning mock response.")
             return '{"angle":"Mock angle","hook_type":"cliffhanger","hook_preview":"This is a mock idea"}'
-            
+
         last_exception = None
-        
+        is_reasoning = model in REASONING_MODELS
+
         for attempt in range(1, retries + 1):
             client = self.clients[self.current_key_idx]
             try:
-                response = client.chat.completions.create(
+                kwargs = dict(
                     model=model,
                     messages=messages,
                     max_tokens=max_tokens,
                     temperature=temperature,
                 )
-                return response.choices[0].message.content.strip()
-                
+                response = client.chat.completions.create(**kwargs)
+                content = self._extract_content(response)
+
+                if is_reasoning:
+                    log.debug(f"[{model}] Reasoning model — extracted final answer ({len(content)} chars)")
+
+                return content
+
             except Exception as e:
                 last_exception = e
-                err_msg = str(e).lower()
+                err_str = str(e).lower()
                 log.warning(f"Cerebras API error on attempt {attempt}/{retries}: {e}")
-                
-                # If we have multiple keys and it's a rate limit or auth error, rotate immediately
-                if len(self.clients) > 1 and ("429" in err_msg or "rate limit" in err_msg or "auth" in err_msg or "401" in err_msg):
+
+                # Rotate key immediately on rate-limit or auth errors
+                if "429" in err_str or "rate limit" in err_str or "401" in err_str or "auth" in err_str:
                     self._rotate_key()
-                
+
                 if attempt < retries:
                     sleep_time = 2 ** attempt  # 2, 4, 8, 16 seconds
-                    log.info(f"Retrying in {sleep_time} seconds...")
+                    log.info(f"Retrying in {sleep_time}s (attempt {attempt}/{retries})...")
                     time.sleep(sleep_time)
                 else:
-                    log.error("Exhausted all retries for Cerebras API.")
-                    
+                    log.error(f"Exhausted all {retries} retries for Cerebras API. Last error: {e}")
+
         raise last_exception

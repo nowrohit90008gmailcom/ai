@@ -27,8 +27,13 @@ GDRIVE_MOUNT = Path(os.getenv("GDRIVE_MOUNT", "/mnt/gdrive"))
 GDRIVE_BASE = GDRIVE_MOUNT / "youtube_factory"
 
 # ─── API Keys ────────────────────────────────────────────────────────────────
-CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY", "YOUR_CEREBRAS_KEY")
-CEREBRAS_API_KEYS = [k.strip() for k in CEREBRAS_API_KEY.split(",") if k.strip()]
+# Supports multiple keys separated by commas for automatic key rotation:
+#   CEREBRAS_API_KEY=key1_abc,key2_def,key3_ghi
+CEREBRAS_API_KEY  = os.getenv("CEREBRAS_API_KEY", "YOUR_CEREBRAS_KEY")
+CEREBRAS_API_KEYS = [
+    k.strip() for k in CEREBRAS_API_KEY.split(",")
+    if k.strip() and "YOUR_" not in k.strip() and k.strip() != ""
+]
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY", "YOUR_DEEPGRAM_KEY")
 VAST_API_KEY     = os.getenv("VAST_API_KEY", "YOUR_VAST_KEY")
 VAST_INSTANCE_ID = os.getenv("VAST_INSTANCE_ID", "YOUR_VAST_INSTANCE_ID")
@@ -46,9 +51,13 @@ JWT_SECRET_KEY     = os.getenv("JWT_SECRET_KEY", "YOUR_RANDOM_JWT_SECRET_32_CHAR
 JWT_ALGORITHM      = "HS256"
 JWT_EXPIRE_HOURS   = 24
 
-# Cerebras Models
-CEREBRAS_MODEL      = os.getenv("CEREBRAS_MODEL",      "gpt-oss-120b")
-CEREBRAS_MODEL_FAST = os.getenv("CEREBRAS_MODEL_FAST", "zai-glm-4.7")
+# ─── Cerebras Models ─────────────────────────────────────────────────────────
+# Both models run on api.cerebras.ai — they are reasoning models that show
+# chain-of-thought internally but return only the clean answer in 'content'.
+#   gpt-oss-120b  — OpenAI GPT OSS 120B  ($0.35 input / $0.75 output per 1M tokens)
+#   zai-glm-4.7   — Z.Ai GLM 4.7         ($2.25 input / $2.75 output per 1M tokens)
+CEREBRAS_MODEL      = os.getenv("CEREBRAS_MODEL",      "gpt-oss-120b")  # Main model
+CEREBRAS_MODEL_FAST = os.getenv("CEREBRAS_MODEL_FAST", "zai-glm-4.7")  # Fallback / fast tasks
 
 # Temperature tuning per task type
 CEREBRAS_TEMP_CREATIVE   = 0.88   # ideas, hooks, scripts  — higher = more variety
@@ -281,8 +290,9 @@ LOGIN_LOCKOUT_SECS = 900  # 15 minutes
 import sys as _sys
 
 _MISSING_KEYS = []
-if CEREBRAS_API_KEY in ("YOUR_CEREBRAS_KEY", ""):
-    _MISSING_KEYS.append("CEREBRAS_API_KEY")
+# For multi-key support, validate the parsed list rather than the raw env var
+if not CEREBRAS_API_KEYS:
+    _MISSING_KEYS.append("CEREBRAS_API_KEY (not set or still placeholder — add real key(s))")
 if DEEPGRAM_API_KEY in ("YOUR_DEEPGRAM_KEY", ""):
     _MISSING_KEYS.append("DEEPGRAM_API_KEY")
 if DASHBOARD_PASSWORD in ("YOUR_SECURE_PASSWORD", ""):
