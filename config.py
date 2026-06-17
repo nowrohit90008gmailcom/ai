@@ -46,10 +46,9 @@ JWT_SECRET_KEY     = os.getenv("JWT_SECRET_KEY", "YOUR_RANDOM_JWT_SECRET_32_CHAR
 JWT_ALGORITHM      = "HS256"
 JWT_EXPIRE_HOURS   = 24
 
-# ─── Cerebras Models ──────────────────────────────────────────────────────────
-# Cerebras GPT OSS 120B — runs on CS-3 wafer chip @ ~2000 tokens/sec
+# Cerebras Models
 CEREBRAS_MODEL      = os.getenv("CEREBRAS_MODEL",      "gpt-oss-120b")
-CEREBRAS_MODEL_FAST = os.getenv("CEREBRAS_MODEL_FAST", "llama3.3-70b")
+CEREBRAS_MODEL_FAST = os.getenv("CEREBRAS_MODEL_FAST", "zai-glm-4.7")
 
 # Temperature tuning per task type
 CEREBRAS_TEMP_CREATIVE   = 0.88   # ideas, hooks, scripts  — higher = more variety
