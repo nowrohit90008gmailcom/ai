@@ -344,9 +344,12 @@ class ImageGenerator:
                 retries    = 5
             )
 
-            # Extract JSON array from response (handle markdown code blocks)
-            raw = re.sub(r"```(?:json)?", "", raw).strip().rstrip("`")
-            prompts = json.loads(raw)
+            # Extract JSON array from response (handle markdown code blocks and preamble text)
+            cleaned = re.sub(r"```(?:json)?", "", raw).strip().rstrip("`")
+            match = re.search(r"\[.*\]", cleaned, re.DOTALL)
+            if not match:
+                raise json.JSONDecodeError("No JSON array found in response", raw, 0)
+            prompts = json.loads(match.group())
 
             if (
                 isinstance(prompts, list)
