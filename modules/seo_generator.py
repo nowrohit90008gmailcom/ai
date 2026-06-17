@@ -9,6 +9,7 @@ import json
 import time
 from config import (
     CEREBRAS_MODEL,
+    CEREBRAS_MODEL_FAST,
     CEREBRAS_TEMP_STRUCTURED, CEREBRAS_MAX_TOKENS_SEO,
     CHANNELS, API_RATE_LIMIT_SLEEP,
 )
@@ -91,29 +92,49 @@ class SEOGenerator:
         return results
 
     def _call_cerebras(self, prompt: str) -> str:
+        # Use temperature=1.0 (reasoning models require it, lower values return empty)
+        effective_temp = max(CEREBRAS_TEMP_STRUCTURED, 1.0)
         try:
             return self.client.generate_completion(
                 model=CEREBRAS_MODEL,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=CEREBRAS_MAX_TOKENS_SEO,
-                temperature=CEREBRAS_TEMP_STRUCTURED,
+                temperature=effective_temp,
                 retries=5
             )
         except Exception:
-            return json.dumps(self._fallback_seo("horror_crime"))
+            # Secondary fallback: try the fast model
+            try:
+                log.warning("[seo] Primary model failed — trying fast model fallback")
+                return self.client.generate_completion(
+                    model=CEREBRAS_MODEL_FAST,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=CEREBRAS_MAX_TOKENS_SEO,
+                    temperature=1.0,
+                    retries=3
+                )
+            except Exception:
+                return json.dumps(self._fallback_seo("fallback"))
 
     @staticmethod
     def _fallback_seo(channel: str) -> dict:
+        ch_tags = {
+            "horror_crime": ["true crime","horror","crime story","usa","american crime","mystery","cold case","unsolved","criminal","detective","fbi","police","crime scene","thriller","scary","real crime","documentary","viral","shorts","youtube shorts"],
+            "manners_fun":   ["kids","parenting","manners","children","learning","toddlers","preschool","family","education","fun for kids","parenting tips","child development","kindness","sharing","school","mom","dad","babies","shorts","youtube shorts"],
+            "cartoon_stories":["cartoon","kids stories","bedtime stories","fairy tales","animation","children","storytime","fable","moral story","short story","funny cartoon","adventure","animals","magic","friendship","princess","dragon","shorts","youtube shorts","family"],
+        }
+        ch_hashtags = {
+            "horror_crime":    ["#Shorts","#TrueCrime","#Horror","#Crime","#Mystery"],
+            "manners_fun":     ["#Shorts","#KidsVideo","#Parenting","#Learning","#Children"],
+            "cartoon_stories": ["#Shorts","#CartoonStories","#KidsStories","#BedtimeStory","#Animation"],
+        }
+        default_tags = ch_tags.get(channel, ch_tags["horror_crime"])
+        default_hashtags = ch_hashtags.get(channel, ch_hashtags["horror_crime"])
         return {
             "title_clickbait": "You Won't Believe What Happened Next",
-            "title_clear": "True Crime Story from the United States",
-            "title_question": "What Really Happened That Night?",
-            "description": "A compelling story you need to hear. Follow for more amazing content.",
-            "tags": [
-                "true crime", "shorts", "youtube shorts", "horror", "crime story",
-                "usa", "american crime", "mystery", "cold case", "unsolved",
-                "criminal", "detective", "fbi", "police", "crime scene",
-                "thriller", "scary", "real crime", "documentary", "viral"
-            ],
-            "hashtags": ["#Shorts", "#TrueCrime", "#Horror", "#Crime", "#Mystery"],
+            "title_clear": "Amazing Story You Need to Hear",
+            "title_question": "What Really Happened?",
+            "description": "A compelling story you need to hear. Follow for more amazing content every day.",
+            "tags": default_tags,
+            "hashtags": default_hashtags,
         }

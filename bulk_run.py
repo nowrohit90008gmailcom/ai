@@ -21,7 +21,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from config import CHANNEL_NAMES, DATA_DIR
+from config import CHANNEL_NAMES, DATA_DIR, GDRIVE_BASE
 from modules.logger import get_logger, log_bulk_event
 from modules.notifier import Notifier
 from modules.scraper import ContentScraper
@@ -85,9 +85,17 @@ class BulkRunner:
         for channel in CHANNEL_NAMES:
             scraper = ContentScraper(channel)
             stories = scraper.scrape_month(count=self.count)
+            # Save to local disk first (reliable inter-stage handoff)
+            local_ch = DATA_DIR / f"run_{self.month}" / channel
+            local_ch.mkdir(parents=True, exist_ok=True)
+            (local_ch / "stories_raw.json").write_text(
+                json.dumps(stories, indent=2, ensure_ascii=False)
+            )
+            # Also save to Drive (for long-term archiving)
             self.dm.save_stories(self.month, channel, stories)
             log.info(f"  [{channel}] Scraped {len(stories)} stories")
         self._complete_stage(state, 1, "Scraping")
+        self._sync_to_drive()
 
     # ─── Stage 2: Ideas ──────────────────────────────────────────────────────
     def _stage_2_ideas(self, state: dict):
@@ -95,11 +103,17 @@ class BulkRunner:
         state["stage"] = 2
         ig = IdeaGenerator()
         for channel in CHANNEL_NAMES:
-            stories = self.dm.load_stories(self.month, channel)
+            # Load stories from local disk (reliable)
+            local_ch = DATA_DIR / f"run_{self.month}" / channel
+            stories_path = local_ch / "stories_raw.json"
+            if stories_path.exists():
+                stories = json.loads(stories_path.read_text())
+            else:
+                stories = self.dm.load_stories(self.month, channel)
             ideas = ig.generate_batch(channel, stories)
-            # Save ideas alongside scripts
-            ch_dir = self.dm.channel_dir(self.month, channel)
-            (ch_dir / "ideas.json").write_text(json.dumps(ideas, indent=2))
+            # Save ideas to local disk for stage 3 to pick up reliably
+            local_ch.mkdir(parents=True, exist_ok=True)
+            (local_ch / "ideas.json").write_text(json.dumps(ideas, indent=2))
             log.info(f"  [{channel}] {len(ideas)} ideas generated")
         self._complete_stage(state, 2, "Ideas")
 
@@ -109,20 +123,33 @@ class BulkRunner:
         state["stage"] = 3
         sg = ScriptGenerator()
         for channel in CHANNEL_NAMES:
-            ch_dir = self.dm.channel_dir(self.month, channel)
-            ideas_file = ch_dir / "ideas.json"
-            if not ideas_file.exists():
-                log.warning(f"[{channel}] No ideas file — using stories directly")
-                stories = self.dm.load_stories(self.month, channel)
-                ideas = [{"raw_story": s, "angle": s.get("title", ""), "hook_preview": ""} for s in stories]
+            # Load ideas from local disk first (reliable)
+            local_ch = DATA_DIR / f"run_{self.month}" / channel
+            ideas_path = local_ch / "ideas.json"
+            if ideas_path.exists():
+                ideas = json.loads(ideas_path.read_text())
             else:
-                ideas = json.loads(ideas_file.read_text())
+                # Fallback: try Drive mount
+                ch_dir = self.dm.channel_dir(self.month, channel)
+                fallback_ideas = ch_dir / "ideas.json"
+                if fallback_ideas.exists():
+                    ideas = json.loads(fallback_ideas.read_text())
+                    log.warning(f"[{channel}] Loaded ideas from Drive mount (fallback)")
+                else:
+                    log.warning(f"[{channel}] No ideas file — using stories directly")
+                    stories_path2 = local_ch / "stories_raw.json"
+                    if stories_path2.exists():
+                        stories = json.loads(stories_path2.read_text())
+                    else:
+                        stories = self.dm.load_stories(self.month, channel)
+                    ideas = [{"raw_story": s, "angle": s.get("title", ""), "hook_preview": ""} for s in stories]
 
             for i, idea in enumerate(ideas):
                 script = sg.generate(channel, idea)
                 self.dm.save_script(self.month, channel, i + 1, script)
             log.info(f"  [{channel}] {len(ideas)} scripts generated")
         self._complete_stage(state, 3, "Scripts")
+        self._sync_to_drive()
 
     # ─── Stage 4: SEO ────────────────────────────────────────────────────────
     def _stage_4_seo(self, state: dict):
@@ -131,11 +158,15 @@ class BulkRunner:
         seo_gen = SEOGenerator()
         for channel in CHANNEL_NAMES:
             scripts = self.dm.load_scripts(self.month, channel)
+            if not scripts:
+                log.warning(f"[{channel}] No scripts found — skipping SEO")
+                continue
             for i, script in enumerate(scripts):
                 seo = seo_gen.generate(channel, script)
                 self.dm.save_seo(self.month, channel, i + 1, seo)
             log.info(f"  [{channel}] {len(scripts)} SEO packages generated")
         self._complete_stage(state, 4, "SEO")
+        self._sync_to_drive()
 
     # ─── Stage 5: Audio ──────────────────────────────────────────────────────
     def _stage_5_audio(self, state: dict):
@@ -144,6 +175,9 @@ class BulkRunner:
         vg = VoiceGenerator()
         for channel in CHANNEL_NAMES:
             scripts = self.dm.load_scripts(self.month, channel)
+            if not scripts:
+                log.warning(f"[{channel}] No scripts found — skipping Audio")
+                continue
             for i, script in enumerate(scripts):
                 out_path = str(self.dm.audio_path(self.month, channel, i + 1))
                 vg.generate_voice(script, channel, out_path)
@@ -152,6 +186,23 @@ class BulkRunner:
                     self._save_state(state)
                     log.info(f"  [{channel}] Audio: {i + 1}/{len(scripts)}")
         self._complete_stage(state, 5, "Audio")
+        self._sync_to_drive()
+
+    # ─── Force-sync to Google Drive ───────────────────────────────────────────
+    def _sync_to_drive(self):
+        """Force rclone to upload any cached files from the VFS mount to Google Drive."""
+        import subprocess
+        local_path = str(GDRIVE_BASE)
+        log.info("☁  Syncing to Google Drive...")
+        result = subprocess.run(
+            ["/usr/bin/rclone", "copy", local_path, f"gdrive:youtube_factory",
+             "--transfers=4", "--checkers=8", "--no-traverse", "--stats=0"],
+            capture_output=True, text=True, timeout=120
+        )
+        if result.returncode == 0:
+            log.info("☁  Google Drive sync complete ✅")
+        else:
+            log.warning(f"☁  Google Drive sync warning: {result.stderr[:200]}")
 
     # ─── State helpers ────────────────────────────────────────────────────────
     def _init_state(self) -> dict:

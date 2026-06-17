@@ -132,10 +132,8 @@ CHANNEL_NAMES = list(CHANNELS.keys())
 # ─── Scraping Sources Per Channel ─────────────────────────────────────────────
 SCRAPE_SOURCES = {
     "horror_crime": [
-        "https://crimeonline.com/category/crime/",
         "https://www.oxygen.com/true-crime-buzz",
-        "https://www.the-sun.com/news/true-crime/",
-        "https://nypost.com/true-crime/",
+        "https://nypost.com/crime/",
         "https://www.cbsnews.com/crime/",
         "https://www.huffpost.com/news/topic/crime",
         "https://www.investigationdiscovery.com/crimefeed",
@@ -145,6 +143,8 @@ SCRAPE_SOURCES = {
         "https://www.cnn.com/us/crime-and-justice",
         "https://www.foxnews.com/category/us/crime",
         "https://abcnews.go.com/US",
+        "https://www.nbcnews.com/news/us-news/crime-courts",
+        "https://www.usatoday.com/news/nation/crime/",
     ],
     "manners_fun": [
         "https://www.motherly.com/parenting/",
