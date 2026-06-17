@@ -64,10 +64,13 @@ CEREBRAS_TEMP_CREATIVE   = 0.88   # ideas, hooks, scripts  — higher = more var
 CEREBRAS_TEMP_STRUCTURED = 0.30   # SEO JSON, image prompts — lower = cleaner format
 
 # Token budgets per task
-CEREBRAS_MAX_TOKENS_SCRIPT  = 1000   # ~600-800 word narration script
-CEREBRAS_MAX_TOKENS_SEO     = 600    # title + tags + description JSON
-CEREBRAS_MAX_TOKENS_PROMPTS = 1400   # 8 image prompts at ~100 words each
-CEREBRAS_MAX_TOKENS_IDEA    = 400    # idea JSON (title + hook + outline)
+# NOTE: gpt-oss-120b / zai-glm-4.7 are reasoning models that spend tokens
+# on internal thinking before producing output. Budgets must be 3-4x larger
+# than the actual expected output length to leave room for reasoning.
+CEREBRAS_MAX_TOKENS_SCRIPT  = 3000   # 180-word script + ~2000 reasoning tokens
+CEREBRAS_MAX_TOKENS_SEO     = 2000   # SEO JSON + reasoning tokens
+CEREBRAS_MAX_TOKENS_PROMPTS = 3000   # 8 image prompts + reasoning tokens
+CEREBRAS_MAX_TOKENS_IDEA    = 1500   # idea JSON + reasoning tokens
 
 # ─── Channel Definitions ─────────────────────────────────────────────────────
 CHANNELS = {
