@@ -68,8 +68,8 @@ class SEOGenerator:
             # Strip markdown code blocks
             cleaned = re.sub(r"```(?:json)?", "", raw).strip().rstrip("`")
 
-            # Strategy 1: Full valid JSON
-            match = re.search(r"\{.*?\}", cleaned, re.DOTALL)
+            # Strategy 1: Try to find a full valid JSON object (greedy match to get outermost {})
+            match = re.search(r"\{.*\}", cleaned, re.DOTALL)
             if match:
                 try:
                     seo = json.loads(match.group())
@@ -80,7 +80,7 @@ class SEOGenerator:
                     log.info(f"[{channel}] SEO: {seo.get('title_clickbait', '')[:50]}")
                     return seo
                 except json.JSONDecodeError:
-                    pass  # Fall through to partial recovery
+                    pass  # JSON truncated — fall through to partial recovery
 
             # Strategy 2: Partial JSON recovery — extract individual fields with regex
             log.warning(f"[{channel}] SEO JSON truncated — running partial field recovery")
