@@ -16,6 +16,7 @@ from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright
 
 from config import SCRAPE_SOURCES, API_RATE_LIMIT_SLEEP, DATA_DIR
 from modules.logger import get_logger
@@ -103,11 +104,34 @@ class ContentScraper:
         else:
             return self._scrape_generic(url)
 
-    # ─── Reddit JSON API ─────────────────────────────────────────────────────
+    # ─── Reddit JSON API (via Playwright) ────────────────────────────────────
     def _scrape_reddit(self, url: str) -> list[dict]:
-        r = requests.get(url, headers=REDDIT_HEADERS, timeout=15)
-        r.raise_for_status()
-        data = r.json()
+        log.info(f"[{self.channel}] Using Playwright to bypass Reddit JS challenge for {url}")
+        
+        with sync_playwright() as p:
+            # Launch in headless mode, but look like a real browser
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+            )
+            page = context.new_page()
+            
+            try:
+                page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                # Reddit JSON is usually wrapped in a <pre> tag when viewed in a browser
+                content = page.locator("pre").inner_text(timeout=5000)
+            except Exception:
+                # Fallback if no <pre> tag is found
+                content = page.locator("body").inner_text()
+                
+            browser.close()
+
+        try:
+            data = json.loads(content)
+        except json.JSONDecodeError:
+            log.error(f"[{self.channel}] Failed to parse Reddit JSON. Raw content snippet: {content[:200]}")
+            raise ValueError("Reddit returned non-JSON content (likely blocked or CAPTCHA).")
+
         posts = data.get("data", {}).get("children", [])
         results = []
         for post in posts:
