@@ -95,18 +95,30 @@ class IdeaGenerator:
             import json, re
             # Strip markdown code blocks if model wrapped JSON in ```
             cleaned = re.sub(r"```(?:json)?", "", response_text).strip().rstrip("`")
-            # Extract the first JSON object from the response
+            # Extract the first JSON object from the response (greedy to get outermost {})
             match = re.search(r"\{.*\}", cleaned, re.DOTALL)
             if not match:
                 raise ValueError("No JSON object found in response")
             idea = json.loads(match.group())
             idea["raw_story"] = story
             idea["channel"] = channel
-            log.info(f"[{channel}] Idea: {idea.get('hook_preview', '')[:60]}")
+            log.info(f"[{channel}] Idea: {idea.get('hook_preview', idea.get('lesson', idea.get('character_name', '')))[:60]}")
             return idea
         except Exception as e:
-            log.error(f"[{channel}] Failed to parse idea JSON: {e} | raw: {response_text[:200]}")
-            return {"error": str(e), "raw_story": story, "channel": channel}
+            log.warning(f"[{channel}] Idea JSON parse failed: {e} — using story title as fallback")
+            # Fallback: build a minimal idea dict from the raw story so pipeline continues
+            return {
+                "raw_story": story,
+                "channel": channel,
+                "angle": story.get("title", "Untitled Story"),
+                "lesson": story.get("title", "An important lesson"),
+                "character_name": "Benny",
+                "hook_type": "cliffhanger",
+                "hook_preview": story.get("summary", story.get("title", ""))[:120],
+                "moral": "Always do the right thing.",
+                "key_facts": [],
+                "emotional_core": "curiosity",
+            }
 
     def generate_batch(self, channel: str, stories: list[dict]) -> list[dict]:
         """Generate ideas for a list of stories."""
