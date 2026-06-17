@@ -191,11 +191,12 @@ class BulkRunner:
     # ─── Force-sync to Google Drive ───────────────────────────────────────────
     def _sync_to_drive(self):
         """Force rclone to upload any cached files from the VFS mount to Google Drive."""
-        import subprocess
+        import subprocess, shutil
+        rclone_bin = shutil.which("rclone") or "/usr/bin/rclone"
         local_path = str(GDRIVE_BASE)
         log.info("☁  Syncing to Google Drive...")
         result = subprocess.run(
-            ["/usr/bin/rclone", "copy", local_path, f"gdrive:youtube_factory",
+            [rclone_bin, "copy", local_path, "gdrive:youtube_factory",
              "--transfers=4", "--checkers=8", "--no-traverse", "--stats=0"],
             capture_output=True, text=True, timeout=120
         )
