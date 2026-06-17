@@ -83,7 +83,7 @@ CHANNELS = {
         "post_times_utc": ["02:00", "04:00"],  # UTC equivalent
         "deepgram_voice": "aura-zeus-en",     # Deep, powerful, commanding — perfect for horror/crime
         "pitch_multiplier": None,      # No pitch shift — keep natural deep male voice
-        "tempo": 0.88,                 # Increased from 0.78 to 0.88 for better pacing but still dramatic
+        "tempo": 0.97,                 # Increased to 0.97 for faster pace
         "motion_bucket_id": 40,        # Slow/creepy motion
         "clip_fps": 8,
         "clip_frames": 48,             # 6 seconds (8fps × 48 = 6s)
@@ -100,7 +100,7 @@ CHANNELS = {
         "post_times_utc": ["12:00", "20:30"],
         "deepgram_voice": "aura-asteria-en",  # Clear, warm, professional female — great for children
         "pitch_multiplier": None,      # Keep natural — asetrate degrades quality
-        "tempo": 0.90,                 # Increased from 0.80 to 0.90 for better engagement
+        "tempo": 0.97,                 # Increased to 0.97 for faster pace
         "motion_bucket_id": 100,       # Moderate motion
         "clip_fps": 8,
         "clip_frames": 40,             # 5 seconds (8fps × 40 = 5s)
@@ -117,7 +117,7 @@ CHANNELS = {
         "post_times_utc": ["20:00", "00:00"],
         "deepgram_voice": "aura-helios-en",   # Energetic male voice — fast-paced and great for cartoons
         "pitch_multiplier": None,      # Keep natural
-        "tempo": 0.95,                 # Increased from 0.82 to 0.95 — lively and quick for kids
+        "tempo": 0.97,                 # Increased to 0.97 for faster pace
         "motion_bucket_id": 127,       # High/dynamic motion
         "clip_fps": 8,
         "clip_frames": 40,             # 5 seconds (8fps × 40 = 5s)
