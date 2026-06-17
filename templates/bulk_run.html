@@ -15,7 +15,7 @@
               background:var(--bg-card);border:1px solid var(--border);border-radius:12px">
     <div :class="statusDotClass" style="width:10px;height:10px;border-radius:50%;flex-shrink:0"></div>
     <div>
-      <span style="font-weight:700;font-size:14px" x-text="statusLabel">Loading...</span>
+      <span style="font-weight:700;font-size:14px" x-html="statusLabel">Loading...</span>
       <span style="color:var(--text-muted);font-size:13px;margin-left:8px" x-text="runMonth"></span>
     </div>
     <div style="margin-left:auto;display:flex;gap:8px">
@@ -46,7 +46,7 @@
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
     <template x-for="(stage, i) in stages" :key="i">
       <div class="card" style="padding:14px" :style="stageCardStyle(stage)">
-        <div style="font-size:18px;margin-bottom:6px" x-text="stage.icon"></div>
+        <div style="font-size:18px;margin-bottom:6px" x-html="stage.icon"></div>
         <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:4px"
           x-text="stage.name"></div>
         <div class="badge" :class="stageBadgeClass(stage)" x-text="stage.status"></div>
