@@ -44,15 +44,22 @@ class VoiceGenerator:
         if not success:
             return False
 
-        # Step 2 — Optional pitch shift
-        if cfg["pitch_multiplier"] and cfg["tempo"]:
+        # Step 2 — Optional pitch/tempo transform
+        pitch = cfg.get("pitch_multiplier")
+        tempo = cfg.get("tempo")
+
+        if pitch and tempo:
+            # Full transform: pitch shift + tempo adjust (manners_fun, cartoon_stories)
             success = self._pitch_shift(
                 str(raw_path), output_path,
-                pitch=cfg["pitch_multiplier"],
-                tempo=cfg["tempo"],
+                pitch=pitch,
+                tempo=tempo,
             )
+        elif tempo:
+            # Tempo only: just slow down without pitch change (horror_crime)
+            success = self._tempo_only(str(raw_path), output_path, tempo=tempo)
         else:
-            # No transform needed (horror_crime)
+            # No transform — copy straight through
             import shutil
             shutil.copy(str(raw_path), output_path)
             success = True
@@ -116,6 +123,33 @@ class VoiceGenerator:
             return True
         except Exception as e:
             log.error(f"ffmpeg pitch shift exception: {e}")
+            return False
+
+    @staticmethod
+    def _tempo_only(input_path: str, output_path: str, tempo: float) -> bool:
+        """
+        Slow down audio using ffmpeg atempo without any pitch change.
+        tempo=0.78 → 22% slower (natural pacing for horror/crime narration).
+        Note: atempo range is [0.5, 2.0]. Values below 0.5 require chained filters.
+        """
+        try:
+            result = subprocess.run(
+                [
+                    "ffmpeg", "-y",
+                    "-i", input_path,
+                    "-af", f"atempo={tempo}",
+                    output_path,
+                ],
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            if result.returncode != 0:
+                log.error(f"ffmpeg tempo-only failed: {result.stderr[-300:]}")
+                return False
+            return True
+        except Exception as e:
+            log.error(f"ffmpeg tempo-only exception: {e}")
             return False
 
     def estimate_duration_seconds(self, text: str) -> float:

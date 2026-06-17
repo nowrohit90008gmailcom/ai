@@ -68,7 +68,7 @@ CEREBRAS_TEMP_STRUCTURED = 0.30   # SEO JSON, image prompts — lower = cleaner 
 # on internal thinking before producing output. Budgets must be 3-4x larger
 # than the actual expected output length to leave room for reasoning.
 CEREBRAS_MAX_TOKENS_SCRIPT  = 3000   # 180-word script + ~2000 reasoning tokens
-CEREBRAS_MAX_TOKENS_SEO     = 2000   # SEO JSON + reasoning tokens
+CEREBRAS_MAX_TOKENS_SEO     = 4000   # SEO JSON + reasoning tokens (must be large for reasoning models)
 CEREBRAS_MAX_TOKENS_PROMPTS = 3000   # 8 image prompts + reasoning tokens
 CEREBRAS_MAX_TOKENS_IDEA    = 1500   # idea JSON + reasoning tokens
 
@@ -81,9 +81,9 @@ CHANNELS = {
         "is_kids": False,
         "post_times_est": ["21:00", "23:00"],  # 9 PM, 11 PM
         "post_times_utc": ["02:00", "04:00"],  # UTC equivalent
-        "deepgram_voice": "aura-orpheus-en",
-        "pitch_multiplier": None,      # No pitch shift
-        "tempo": None,
+        "deepgram_voice": "aura-zeus-en",     # Deep, powerful, commanding — perfect for horror/crime
+        "pitch_multiplier": None,      # No pitch shift — keep natural deep male voice
+        "tempo": 0.78,                 # 22% slower — dramatic true-crime podcast pacing
         "motion_bucket_id": 40,        # Slow/creepy motion
         "clip_fps": 8,
         "clip_frames": 48,             # 6 seconds (8fps × 48 = 6s)
@@ -98,9 +98,9 @@ CHANNELS = {
         "is_kids": True,
         "post_times_est": ["07:00", "15:30"],  # 7 AM, 3:30 PM
         "post_times_utc": ["12:00", "20:30"],
-        "deepgram_voice": "aura-luna-en",
-        "pitch_multiplier": 1.30,      # +30% → sweet girl voice
-        "tempo": 0.85,
+        "deepgram_voice": "aura-asteria-en",  # Clear, warm, professional female — great for children
+        "pitch_multiplier": None,      # Keep natural — asetrate degrades quality
+        "tempo": 0.80,                 # 20% slower — clear for children to follow
         "motion_bucket_id": 100,       # Moderate motion
         "clip_fps": 8,
         "clip_frames": 40,             # 5 seconds (8fps × 40 = 5s)
@@ -115,9 +115,9 @@ CHANNELS = {
         "is_kids": True,
         "post_times_est": ["15:00", "19:00"],  # 3 PM, 7 PM
         "post_times_utc": ["20:00", "00:00"],
-        "deepgram_voice": "aura-stella-en",
-        "pitch_multiplier": 1.25,      # +25% → energetic kid voice
-        "tempo": 0.90,
+        "deepgram_voice": "aura-hera-en",     # Mature, confident, storytelling female — great for cartoons
+        "pitch_multiplier": None,      # Keep natural — aura-hera is naturally expressive
+        "tempo": 0.82,                 # 18% slower — gentle, story-friendly pacing
         "motion_bucket_id": 127,       # High/dynamic motion
         "clip_fps": 8,
         "clip_frames": 40,             # 5 seconds (8fps × 40 = 5s)
@@ -133,7 +133,6 @@ CHANNEL_NAMES = list(CHANNELS.keys())
 SCRAPE_SOURCES = {
     "horror_crime": [
         "https://www.oxygen.com/true-crime-buzz",
-        "https://nypost.com/crime/",
         "https://www.cbsnews.com/crime/",
         "https://www.huffpost.com/news/topic/crime",
         "https://www.investigationdiscovery.com/crimefeed",

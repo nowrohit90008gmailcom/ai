@@ -98,6 +98,11 @@ class ScriptGenerator:
         )
 
         script = self._call_cerebras(prompt)  # uses CEREBRAS_MAX_TOKENS_SCRIPT from config
+        # Strip structural labels that the model sometimes adds (e.g. [HOOK], [CTA])
+        import re
+        script = re.sub(r"\[HOOK\]|\[STORY\]|\[PUNCHLINE\]|\[CTA\]|\[LESSON\]|\[MORAL\]", "", script).strip()
+        # Collapse multiple blank lines
+        script = re.sub(r"\n{3,}", "\n\n", script)
         log.debug(f"[{channel}] Raw script response: {repr(script[:200])}")
         word_count = len(script.split())
         log.info(f"[{channel}] Script generated ({word_count} words): {script[:60]}...")

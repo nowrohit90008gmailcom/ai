@@ -65,19 +65,29 @@ class SEOGenerator:
         log.debug(f"[{channel}] Raw SEO response: {raw[:300]}")
         try:
             import re
-            # Strip markdown code blocks and extract JSON object
+            # Strip markdown code blocks
             cleaned = re.sub(r"```(?:json)?", "", raw).strip().rstrip("`")
-            match = re.search(r"\{.*\}", cleaned, re.DOTALL)
-            if not match:
-                raise ValueError("No JSON object found in SEO response")
-            seo = json.loads(match.group())
-            # Enforce tag/hashtag counts
-            seo["tags"] = (seo.get("tags", []) + [""] * 20)[:20]
-            seo["hashtags"] = (seo.get("hashtags", []) + ["#Shorts"])[:5]
-            if "#Shorts" not in seo["hashtags"]:
-                seo["hashtags"][4] = "#Shorts"
-            log.info(f"[{channel}] SEO: {seo.get('title_clickbait', '')[:50]}")
+
+            # Strategy 1: Full valid JSON
+            match = re.search(r"\{.*?\}", cleaned, re.DOTALL)
+            if match:
+                try:
+                    seo = json.loads(match.group())
+                    seo["tags"] = (seo.get("tags", []) + [""] * 20)[:20]
+                    seo["hashtags"] = (seo.get("hashtags", []) + ["#Shorts"])[:5]
+                    if "#Shorts" not in seo["hashtags"]:
+                        seo["hashtags"][4] = "#Shorts"
+                    log.info(f"[{channel}] SEO: {seo.get('title_clickbait', '')[:50]}")
+                    return seo
+                except json.JSONDecodeError:
+                    pass  # Fall through to partial recovery
+
+            # Strategy 2: Partial JSON recovery — extract individual fields with regex
+            log.warning(f"[{channel}] SEO JSON truncated — running partial field recovery")
+            seo = self._recover_partial_seo(cleaned, channel)
+            log.info(f"[{channel}] SEO recovered: {seo.get('title_clickbait', '')[:50]}")
             return seo
+
         except Exception as e:
             log.error(f"[{channel}] SEO parse error: {e} | raw: {raw[:200]}")
             return self._fallback_seo(channel)
@@ -92,7 +102,7 @@ class SEOGenerator:
         return results
 
     def _call_cerebras(self, prompt: str) -> str:
-        # Use temperature=1.0 (reasoning models require it, lower values return empty)
+        # Reasoning models need temperature=1.0 and extra tokens for chain-of-thought
         effective_temp = max(CEREBRAS_TEMP_STRUCTURED, 1.0)
         try:
             return self.client.generate_completion(
@@ -115,6 +125,35 @@ class SEOGenerator:
                 )
             except Exception:
                 return json.dumps(self._fallback_seo("fallback"))
+
+    @staticmethod
+    def _recover_partial_seo(text: str, channel: str) -> dict:
+        """Extract SEO fields from truncated/partial JSON using regex per-field."""
+        import re
+        def extract_str(key):
+            m = re.search(rf'"{key}"\s*:\s*"([^"]+)"', text)
+            return m.group(1) if m else ""
+        def extract_list(key):
+            m = re.search(rf'"{key}"\s*:\s*\[([^\]]*)', text, re.DOTALL)
+            if not m:
+                return []
+            items = re.findall(r'"([^"]+)"', m.group(1))
+            return items
+
+        ch_fallback = SEOGenerator._fallback_seo(channel)
+        seo = {
+            "title_clickbait": extract_str("title_clickbait") or ch_fallback["title_clickbait"],
+            "title_clear":     extract_str("title_clear")     or ch_fallback["title_clear"],
+            "title_question":  extract_str("title_question")  or ch_fallback["title_question"],
+            "description":     extract_str("description")     or ch_fallback["description"],
+            "tags":            extract_list("tags")            or ch_fallback["tags"],
+            "hashtags":        extract_list("hashtags")        or ch_fallback["hashtags"],
+        }
+        seo["tags"] = (seo["tags"] + [""] * 20)[:20]
+        seo["hashtags"] = (seo["hashtags"] + ["#Shorts"])[:5]
+        if "#Shorts" not in seo["hashtags"]:
+            seo["hashtags"][4] = "#Shorts"
+        return seo
 
     @staticmethod
     def _fallback_seo(channel: str) -> dict:
