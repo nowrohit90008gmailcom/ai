@@ -95,7 +95,7 @@ class ContentScraper:
 
     # ─── Routing ─────────────────────────────────────────────────────────────
     def _scrape_source(self, url: str) -> list[dict]:
-        if "reddit.com" in url and url.endswith(".json"):
+        if "reddit.com" in url and (".json" in url):
             return self._scrape_reddit(url)
         elif "aesopfables.com" in url:
             return self._scrape_aesop(url)
