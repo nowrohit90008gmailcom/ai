@@ -80,7 +80,9 @@ class DriveManager:
     def save_script(self, month: str, channel: str, short_num: int, script: str):
         d = self.short_dir(month, channel, short_num)
         d.mkdir(parents=True, exist_ok=True)
-        (d / "script.txt").write_text(script, encoding="utf-8")
+        out_path = d / "script.txt"
+        out_path.write_text(script, encoding="utf-8")
+        log.info(f"[{channel}] Saved script → {out_path}")
 
     def load_scripts(self, month: str, channel: str) -> list[str]:
         ch_dir = self.channel_dir(month, channel)
@@ -98,7 +100,9 @@ class DriveManager:
     def save_seo(self, month: str, channel: str, short_num: int, seo: dict):
         d = self.short_dir(month, channel, short_num)
         d.mkdir(parents=True, exist_ok=True)
-        (d / "seo.json").write_text(json.dumps(seo, indent=2))
+        out_path = d / "seo.json"
+        out_path.write_text(json.dumps(seo, indent=2))
+        log.info(f"[{channel}] Saved SEO → {out_path}")
 
     def load_seo(self, month: str, channel: str, short_num: int) -> dict:
         path = self.short_dir(month, channel, short_num) / "seo.json"

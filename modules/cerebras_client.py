@@ -132,6 +132,9 @@ class CerebrasWrapper:
                 response = client.chat.completions.create(**kwargs)
                 content = self._extract_content(response)
 
+                if not content:
+                    raise ValueError(f"[{model}] API returned empty content (temperature={temperature})")
+
                 if is_reasoning:
                     log.debug(f"[{model}] Reasoning model — extracted final answer ({len(content)} chars)")
 

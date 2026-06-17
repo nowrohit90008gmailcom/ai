@@ -74,11 +74,12 @@ class VoiceGenerator:
                     "Authorization": f"Token {DEEPGRAM_API_KEY}",
                     "Content-Type": "application/json",
                 },
-                json={
-                    "text": text,
+                params={
                     "model": voice,
                     "encoding": "mp3",
-                    "sample_rate": AUDIO_SAMPLE_RATE,
+                },
+                json={
+                    "text": text,
                 },
                 timeout=60,
             )
