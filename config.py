@@ -158,6 +158,11 @@ SCRAPE_SOURCES = {
         "https://www.huffpost.com/news/topic/crime",
         "https://www.investigationdiscovery.com/crimefeed",
         "https://www.mirror.co.uk/news/us-news/crime/",
+        "https://en.wikipedia.org/wiki/List_of_serial_killers_in_the_United_States",
+        "https://en.wikipedia.org/wiki/List_of_unsolved_murders",
+        "https://www.cnn.com/us/crime-and-justice",
+        "https://www.foxnews.com/category/us/crime",
+        "https://abcnews.go.com/US",
     ],
     "manners_fun": [
         "https://www.reddit.com/r/parenting/top.json?t=week",
@@ -187,6 +192,10 @@ SCRAPE_SOURCES = {
         "https://www.romper.com/",
         "https://www.moms.com/",
         "https://www.verywellfamily.com/",
+        "https://www.cnn.com/health/parenting",
+        "https://www.nbcnews.com/parenting",
+        "https://www.nytimes.com/section/well/family",
+        "https://www.huffpost.com/life/parents",
     ],
     "cartoon_stories": [
         "https://www.reddit.com/r/WritingPrompts/top.json?t=week",
@@ -213,6 +222,9 @@ SCRAPE_SOURCES = {
         "https://www.bedtime.com/",
         "https://fairytalez.com/",
         "https://www.magickeys.com/books/",
+        "https://en.wikipedia.org/wiki/List_of_fairy_tales",
+        "https://en.wikipedia.org/wiki/Aesop%27s_Fables",
+        "https://en.wikipedia.org/wiki/Fable",
     ],
 }
 
