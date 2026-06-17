@@ -13,9 +13,11 @@ from modules.logger import get_logger
 
 log = get_logger("cerebras_client")
 
-# Reasoning models return reasoning_content alongside message.content.
-# We detect them by name so we know to extract only the final answer.
+# Reasoning models (gpt-oss-120b / zai-glm-4.7) require temperature=1.0.
+# Setting temperature < 1.0 causes them to silently return empty content.
+# We detect them by name and always override temperature to 1.0.
 REASONING_MODELS = {"gpt-oss-120b", "zai-glm-4.7"}
+MIN_REASONING_TEMP = 1.0  # Do not go below this for reasoning models
 
 
 class CerebrasWrapper:
@@ -109,6 +111,15 @@ class CerebrasWrapper:
         last_exception = None
         is_reasoning = model in REASONING_MODELS
 
+        # Reasoning models REQUIRE temperature >= 1.0.
+        # Values below 1.0 cause them to silently return empty content.
+        if is_reasoning and temperature < MIN_REASONING_TEMP:
+            log.debug(
+                f"[{model}] Reasoning model detected — clamping temperature "
+                f"{temperature} → {MIN_REASONING_TEMP}"
+            )
+            temperature = MIN_REASONING_TEMP
+
         for attempt in range(1, retries + 1):
             client = self.clients[self.current_key_idx]
             try:
@@ -142,4 +153,6 @@ class CerebrasWrapper:
                 else:
                     log.error(f"Exhausted all {retries} retries for Cerebras API. Last error: {e}")
 
-        raise last_exception
+        if last_exception:
+            raise last_exception
+        return ""

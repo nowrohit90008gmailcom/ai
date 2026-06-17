@@ -33,8 +33,12 @@ class Notifier:
         Or use the ntfy app on your phone.
         """
         try:
+            # HTTP headers must be ASCII-safe — strip emoji from title
+            # (emoji go in tags and body which are sent as UTF-8 bytes)
+            safe_title = title.encode("ascii", errors="ignore").decode("ascii").strip() or "ShortForge"
+
             headers = {
-                "Title": title,
+                "Title": safe_title,
                 "Priority": priority,
             }
             if tags:
