@@ -29,7 +29,8 @@ Requirements:
 - Hook: First sentence must create instant dread or curiosity using: {hook_preview}
 - Reference real American locations, FBI/local PD, US legal terms where applicable
 - Tone: Suspenseful, conversational, like a true crime podcast
-- Pacing: Short punchy sentences. Dramatic pauses implied with "..."
+- Pacing: CRITICAL - You MUST use frequent ellipses (...) and em-dashes (—) to force natural speaking pauses.
+- Write short, punchy sentences with breathing room between thoughts.
 - End with a shocking revelation or unanswered question
 - CTA: "Follow for more true crime stories"
 
@@ -49,6 +50,8 @@ Requirements:
 - Include ONE fun rhyme or repetition kids can remember
 - Align with US kindergarten social skills standards
 - Tone: Warm, friendly, encouraging — NEVER scolding
+- Pacing: CRITICAL - You MUST use frequent ellipses (...) and em-dashes (—) to force natural speaking pauses.
+- Write short sentences with breathing room between thoughts so kids can follow along.
 - End with the lesson clearly stated in one simple sentence
 - CTA: "Follow to learn more fun manners!"
 
@@ -68,6 +71,8 @@ Requirements:
 - Include action words: Zoom! Bam! Whoosh! Pop! at dramatic moments
 - Always end with a clear moral lesson (one sentence)
 - Tone: Maximum fun, silly, expressive
+- Pacing: CRITICAL - You MUST use frequent ellipses (...) and em-dashes (—) to force natural speaking pauses.
+- Write short sentences with breathing room between thoughts.
 - CTA: "Follow for more cartoon stories!"
 
 Return ONLY the script text. No labels, no explanation, no markdown.""",
