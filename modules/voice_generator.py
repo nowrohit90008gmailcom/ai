@@ -34,6 +34,11 @@ class VoiceGenerator:
         output.parent.mkdir(parents=True, exist_ok=True)
         raw_path = output.with_name(output.stem + "_raw.mp3")
 
+        # Guard: Deepgram returns 400 if text is empty
+        if not text or not text.strip():
+            log.error(f"[{channel}] Empty script text — skipping voice generation")
+            return False
+
         # Step 1 — Deepgram TTS
         success = self._deepgram_tts(text, cfg["deepgram_voice"], str(raw_path))
         if not success:

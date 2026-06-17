@@ -64,12 +64,25 @@ class CerebrasWrapper:
     def _extract_content(response) -> str:
         """
         Safely extracts the final user-facing text from the response.
-        For reasoning models (gpt-oss-120b / zai-glm-4.7), the model
-        returns both 'reasoning_content' (internal thinking) and 'content'
-        (the clean final answer). We always return only 'content'.
+
+        For reasoning models (gpt-oss-120b / zai-glm-4.7):
+          - The model does internal chain-of-thought thinking
+          - The final answer is in message.content
+          - BUT some Cerebras SDK versions return it in reasoning_content
+            and leave content empty — so we fall back to reasoning_content
+            if content is empty.
         """
         msg = response.choices[0].message
-        return (msg.content or "").strip()
+        content = (msg.content or "").strip()
+
+        # Fallback: reasoning models sometimes put output in reasoning_content
+        if not content:
+            reasoning = getattr(msg, "reasoning_content", None) or ""
+            content = reasoning.strip()
+            if content:
+                log.debug("Used reasoning_content fallback (content was empty)")
+
+        return content
 
     def generate_completion(
         self,

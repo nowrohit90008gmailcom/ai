@@ -29,6 +29,12 @@ HEADERS = {
     "Accept-Language": "en-US,en;q=0.5",
 }
 
+# Reddit requires a specific user-agent format to allow API access
+REDDIT_HEADERS = {
+    "User-Agent": "ShortForge/1.0 (content scraper; contact: admin@shortforge.ai)",
+    "Accept": "application/json",
+}
+
 
 class ContentScraper:
     """Scrapes story/topic content for a given channel."""
@@ -77,7 +83,7 @@ class ContentScraper:
 
     # ─── Reddit JSON API ─────────────────────────────────────────────────────
     def _scrape_reddit(self, url: str) -> list[dict]:
-        r = requests.get(url, headers={**HEADERS, "Accept": "application/json"}, timeout=15)
+        r = requests.get(url, headers=REDDIT_HEADERS, timeout=15)
         r.raise_for_status()
         data = r.json()
         posts = data.get("data", {}).get("children", [])

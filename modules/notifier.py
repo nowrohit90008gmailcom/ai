@@ -57,10 +57,13 @@ class Notifier:
             msg = MIMEMultipart("alternative")
             msg["From"]    = GMAIL_ADDRESS
             msg["To"]      = NOTIFY_EMAIL
-            msg["Subject"] = f"[ShortForge] {subject}"
+            # Use ascii-safe subject to avoid header encoding issues
+            safe_subject = subject.encode("ascii", errors="replace").decode("ascii")
+            msg["Subject"] = f"[ShortForge] {safe_subject}"
 
             mime_type = "html" if html else "plain"
-            msg.attach(MIMEText(body, mime_type))
+            # Explicitly set utf-8 charset so emoji in body don't crash
+            msg.attach(MIMEText(body, mime_type, "utf-8"))
 
             with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as server:
                 server.login(GMAIL_ADDRESS, GMAIL_PASSWORD)
