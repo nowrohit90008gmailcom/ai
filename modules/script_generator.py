@@ -93,6 +93,7 @@ class ScriptGenerator:
         )
 
         script = self._call_cerebras(prompt)  # uses CEREBRAS_MAX_TOKENS_SCRIPT from config
+        log.debug(f"[{channel}] Raw script response: {repr(script[:200])}")
         word_count = len(script.split())
         log.info(f"[{channel}] Script generated ({word_count} words): {script[:60]}...")
         return script

@@ -61,8 +61,15 @@ class SEOGenerator:
             script=script[:600],
         )
         raw = self._call_cerebras(prompt)
+        log.debug(f"[{channel}] Raw SEO response: {raw[:300]}")
         try:
-            seo = json.loads(raw)
+            import re
+            # Strip markdown code blocks and extract JSON object
+            cleaned = re.sub(r"```(?:json)?", "", raw).strip().rstrip("`")
+            match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+            if not match:
+                raise ValueError("No JSON object found in SEO response")
+            seo = json.loads(match.group())
             # Enforce tag/hashtag counts
             seo["tags"] = (seo.get("tags", []) + [""] * 20)[:20]
             seo["hashtags"] = (seo.get("hashtags", []) + ["#Shorts"])[:5]

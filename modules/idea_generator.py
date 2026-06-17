@@ -35,7 +35,7 @@ Return a JSON object with:
   "year": "Year of incident if applicable"
 }}
 
-Return ONLY the JSON, no explanation.""",
+Return ONLY valid JSON. No markdown. No code blocks. No explanation. No text before or after.""",
 
     "manners_fun": """You are a kids educational content strategist for YouTube Shorts.
 
@@ -54,7 +54,7 @@ Return a JSON object with:
   "positive_message": "The uplifting takeaway"
 }}
 
-Return ONLY the JSON, no explanation.""",
+Return ONLY valid JSON. No markdown. No code blocks. No explanation. No text before or after.""",
 
     "cartoon_stories": """You are a kids cartoon content strategist for YouTube Shorts.
 
@@ -74,7 +74,7 @@ Return a JSON object with:
   "action_words": ["Zoom!", "Bam!", "Whoosh!"]
 }}
 
-Return ONLY the JSON, no explanation.""",
+Return ONLY valid JSON. No markdown. No code blocks. No explanation. No text before or after.""",
 }
 
 
@@ -90,15 +90,22 @@ class IdeaGenerator:
         prompt = IDEA_PROMPTS[channel].format(story_text=story_text)
 
         response_text = self._call_cerebras(prompt)
+        log.debug(f"[{channel}] Raw idea response: {response_text[:300]}")
         try:
-            import json
-            idea = json.loads(response_text)
+            import json, re
+            # Strip markdown code blocks if model wrapped JSON in ```
+            cleaned = re.sub(r"```(?:json)?", "", response_text).strip().rstrip("`")
+            # Extract the first JSON object from the response
+            match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+            if not match:
+                raise ValueError("No JSON object found in response")
+            idea = json.loads(match.group())
             idea["raw_story"] = story
             idea["channel"] = channel
             log.info(f"[{channel}] Idea: {idea.get('hook_preview', '')[:60]}")
             return idea
         except Exception as e:
-            log.error(f"[{channel}] Failed to parse idea JSON: {e}")
+            log.error(f"[{channel}] Failed to parse idea JSON: {e} | raw: {response_text[:200]}")
             return {"error": str(e), "raw_story": story, "channel": channel}
 
     def generate_batch(self, channel: str, stories: list[dict]) -> list[dict]:
