@@ -17,7 +17,7 @@ from typing import Optional
 import requests
 from bs4 import BeautifulSoup
 
-from config import SCRAPE_SOURCES, API_RATE_LIMIT_SLEEP
+from config import SCRAPE_SOURCES, API_RATE_LIMIT_SLEEP, DATA_DIR
 from modules.logger import get_logger
 
 log = get_logger("scraper")
@@ -46,29 +46,51 @@ class ContentScraper:
     # ─── Public API ──────────────────────────────────────────────────────────
     def scrape_month(self, count: int = 60) -> list[dict]:
         """Scrape `count` stories for this channel."""
+        history_file = DATA_DIR / f"history_{self.channel}.json"
+        
+        # Load historical titles to prevent cross-run repeats
+        history = set()
+        if history_file.exists():
+            try:
+                history = set(json.loads(history_file.read_text()))
+            except Exception:
+                pass
+
         stories = []
         for source_url in self.sources:
-            if len(stories) >= count:
+            if len(stories) >= count * 2:  # Buffer extra to account for drops
                 break
             try:
                 batch = self._scrape_source(source_url)
-                stories.extend(batch)
+                # Filter against historical repeats
+                for s in batch:
+                    key = s.get("title", "")[:80].strip().lower()
+                    if key and key not in history:
+                        stories.append(s)
                 log.info(f"[{self.channel}] Scraped {len(batch)} from {source_url}")
             except Exception as e:
                 log.warning(f"[{self.channel}] Failed {source_url}: {e}")
             time.sleep(API_RATE_LIMIT_SLEEP + random.uniform(0.5, 1.5))
 
-        # Deduplicate by title
+        # Deduplicate within current batch
         seen = set()
         unique = []
         for s in stories:
-            key = s.get("title", "")[:80]
+            key = s.get("title", "")[:80].strip().lower()
             if key not in seen:
                 seen.add(key)
                 unique.append(s)
 
-        log.info(f"[{self.channel}] Total unique stories: {len(unique[:count])}")
-        return unique[:count]
+        final_batch = unique[:count]
+
+        # Save new titles to history
+        for s in final_batch:
+            history.add(s.get("title", "")[:80].strip().lower())
+        
+        history_file.write_text(json.dumps(list(history)))
+
+        log.info(f"[{self.channel}] Total unique stories (new): {len(final_batch)}")
+        return final_batch
 
     # ─── Routing ─────────────────────────────────────────────────────────────
     def _scrape_source(self, url: str) -> list[dict]:

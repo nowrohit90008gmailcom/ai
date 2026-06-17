@@ -134,16 +134,22 @@ SCRAPE_SOURCES = {
     "horror_crime": [
         "https://www.reddit.com/r/truecrime/top.json?t=week",
         "https://www.reddit.com/r/UnresolvedMysteries/top.json?t=week",
+        "https://www.reddit.com/r/LetsNotMeet/top.json?t=week",
+        "https://www.reddit.com/r/creepyencounters/top.json?t=week",
         "https://crimeonline.com/category/crime/",
         "https://www.oxygen.com/true-crime-buzz",
     ],
     "manners_fun": [
+        "https://www.reddit.com/r/parenting/top.json?t=week",
+        "https://www.reddit.com/r/Teachers/top.json?t=week",
         "https://www.motherly.com/parenting/",
         "https://www.scarymommy.com/parenting/",
         "https://www.pbs.org/parents/",
         "https://www.commonsensemedia.org/",
     ],
     "cartoon_stories": [
+        "https://www.reddit.com/r/WritingPrompts/top.json?t=week",
+        "https://www.reddit.com/r/BedtimeStories/top.json?t=week",
         "https://www.gutenberg.org/browse/scores/top",
         "https://www.aesopfables.com/",
         "https://americanliterature.com/childrens-stories",
