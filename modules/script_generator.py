@@ -7,10 +7,11 @@ tailored per channel style and voice.
 
 import time
 from config import (
-    CEREBRAS_API_KEY, CEREBRAS_MODEL,
+    CEREBRAS_MODEL,
     CEREBRAS_TEMP_CREATIVE, CEREBRAS_MAX_TOKENS_SCRIPT,
     CHANNELS, API_RATE_LIMIT_SLEEP,
 )
+from modules.cerebras_client import CerebrasWrapper
 from modules.logger import get_logger
 
 log = get_logger("script_generator")
@@ -77,12 +78,7 @@ class ScriptGenerator:
     """Generates per-channel scripts using Cerebras."""
 
     def __init__(self):
-        try:
-            from cerebras.cloud.sdk import Cerebras
-            self.client = Cerebras(api_key=CEREBRAS_API_KEY)
-        except ImportError:
-            log.warning("cerebras-cloud-sdk not installed — using mock mode")
-            self.client = None
+        self.client = CerebrasWrapper()
 
     def generate(self, channel: str, idea: dict) -> str:
         """Generate a script from a structured idea."""
@@ -111,18 +107,10 @@ class ScriptGenerator:
         return scripts
 
     def _call_cerebras(self, prompt: str, max_tokens: int = None) -> str:
-        if self.client is None:
-            return (
-                "In a quiet Ohio town in 1987, something strange happened... "
-                "The police found clues but no answers. "
-                "The case went cold for 20 years. "
-                "Until one phone call changed everything. "
-                "Follow for more true crime stories."
-            )
-        response = self.client.chat.completions.create(
-            model=CEREBRAS_MODEL,                          # cbsgpt-120b
+        return self.client.generate_completion(
+            model=CEREBRAS_MODEL,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=max_tokens or CEREBRAS_MAX_TOKENS_SCRIPT,
-            temperature=CEREBRAS_TEMP_CREATIVE,            # 0.88 — creative variance
+            temperature=CEREBRAS_TEMP_CREATIVE,
+            retries=5
         )
-        return response.choices[0].message.content.strip()

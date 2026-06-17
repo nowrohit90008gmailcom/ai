@@ -8,10 +8,11 @@ and 5 hashtags per video — all US-audience optimized.
 import json
 import time
 from config import (
-    CEREBRAS_API_KEY, CEREBRAS_MODEL,
+    CEREBRAS_MODEL,
     CEREBRAS_TEMP_STRUCTURED, CEREBRAS_MAX_TOKENS_SEO,
     CHANNELS, API_RATE_LIMIT_SLEEP,
 )
+from modules.cerebras_client import CerebrasWrapper
 from modules.logger import get_logger
 
 log = get_logger("seo_generator")
@@ -49,12 +50,7 @@ class SEOGenerator:
     """Generates YouTube SEO packages using Cerebras."""
 
     def __init__(self):
-        try:
-            from cerebras.cloud.sdk import Cerebras
-            self.client = Cerebras(api_key=CEREBRAS_API_KEY)
-        except ImportError:
-            log.warning("cerebras-cloud-sdk not installed — mock mode active")
-            self.client = None
+        self.client = CerebrasWrapper()
 
     def generate(self, channel: str, script: str) -> dict:
         """Generate full SEO package for a script."""
@@ -88,15 +84,16 @@ class SEOGenerator:
         return results
 
     def _call_cerebras(self, prompt: str) -> str:
-        if self.client is None:
+        try:
+            return self.client.generate_completion(
+                model=CEREBRAS_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=CEREBRAS_MAX_TOKENS_SEO,
+                temperature=CEREBRAS_TEMP_STRUCTURED,
+                retries=5
+            )
+        except Exception:
             return json.dumps(self._fallback_seo("horror_crime"))
-        response = self.client.chat.completions.create(
-            model=CEREBRAS_MODEL,                           # cbsgpt-120b
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=CEREBRAS_MAX_TOKENS_SEO,             # 600
-            temperature=CEREBRAS_TEMP_STRUCTURED,           # 0.30 — clean JSON
-        )
-        return response.choices[0].message.content.strip()
 
     @staticmethod
     def _fallback_seo(channel: str) -> dict:

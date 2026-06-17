@@ -21,7 +21,7 @@ from pathlib import Path
 import requests
 
 from config import (
-    CEREBRAS_API_KEY, CEREBRAS_MODEL,
+    CEREBRAS_MODEL,
     CEREBRAS_TEMP_STRUCTURED, CEREBRAS_MAX_TOKENS_PROMPTS,
     COMFYUI_URL, COMFYUI_URLS, CHANNELS,
     VIDEO_WIDTH, VIDEO_HEIGHT,
@@ -29,6 +29,7 @@ from config import (
     COMFYUI_BATCH_SUBMIT, COMFYUI_POLL_WORKERS,
     FLUX_UNET, FLUX_CLIP_T5, FLUX_CLIP_L, FLUX_VAE, FLUX_GUIDANCE,
 )
+from modules.cerebras_client import CerebrasWrapper
 from modules.logger import get_logger
 
 log = get_logger("image_generator")
@@ -199,11 +200,7 @@ class ImageGenerator:
         else:
             self.url = COMFYUI_URL.rstrip("/")
         # Cerebras client
-        try:
-            from cerebras.cloud.sdk import Cerebras
-            self._cerebras = Cerebras(api_key=CEREBRAS_API_KEY)
-        except Exception:
-            self._cerebras = None
+        self._cerebras = CerebrasWrapper()
 
     # ─── Public API ───────────────────────────────────────────────────────────
 
@@ -322,8 +319,6 @@ class ImageGenerator:
         """
         if not self._cerebras or not script:
             return None
-        if "YOUR_" in CEREBRAS_API_KEY:
-            return None
 
         cfg = CHANNELS[channel]
         style_desc = {
@@ -341,13 +336,13 @@ class ImageGenerator:
         )
 
         try:
-            response = self._cerebras.chat.completions.create(
+            raw = self._cerebras.generate_completion(
                 model      = CEREBRAS_MODEL,               # cbsgpt-120b
                 messages   = [{"role": "user", "content": prompt_text}],
                 max_tokens = CEREBRAS_MAX_TOKENS_PROMPTS,  # 1400
                 temperature= CEREBRAS_TEMP_STRUCTURED,     # 0.30 — clean JSON array
+                retries    = 5
             )
-            raw = response.choices[0].message.content.strip()
 
             # Extract JSON array from response (handle markdown code blocks)
             raw = re.sub(r"```(?:json)?", "", raw).strip().rstrip("`")
@@ -377,8 +372,6 @@ class ImageGenerator:
         """Ask Cerebras for a single custom thumbnail prompt."""
         if not self._cerebras or not script:
             return None
-        if "YOUR_" in CEREBRAS_API_KEY:
-            return None
 
         cfg = CHANNELS[channel]
         style_desc = {
@@ -394,13 +387,14 @@ class ImageGenerator:
         )
 
         try:
-            response = self._cerebras.chat.completions.create(
+            raw = self._cerebras.generate_completion(
                 model      = CEREBRAS_MODEL,               # cbsgpt-120b
                 messages   = [{"role": "user", "content": prompt_text}],
                 max_tokens = 200,
                 temperature= CEREBRAS_TEMP_STRUCTURED,     # 0.30
+                retries    = 5
             )
-            prompt = response.choices[0].message.content.strip().strip('"')
+            prompt = raw.strip().strip('"')
             if len(prompt) > 20:
                 log.info(f"[{channel}] Cerebras thumbnail prompt: {prompt[:70]}...")
                 return prompt

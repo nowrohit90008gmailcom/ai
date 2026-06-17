@@ -28,6 +28,7 @@ GDRIVE_BASE = GDRIVE_MOUNT / "youtube_factory"
 
 # ─── API Keys ────────────────────────────────────────────────────────────────
 CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY", "YOUR_CEREBRAS_KEY")
+CEREBRAS_API_KEYS = [k.strip() for k in CEREBRAS_API_KEY.split(",") if k.strip()]
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY", "YOUR_DEEPGRAM_KEY")
 VAST_API_KEY     = os.getenv("VAST_API_KEY", "YOUR_VAST_KEY")
 VAST_INSTANCE_ID = os.getenv("VAST_INSTANCE_ID", "YOUR_VAST_INSTANCE_ID")
