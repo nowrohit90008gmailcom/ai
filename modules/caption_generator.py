@@ -23,8 +23,8 @@ from modules.logger import get_logger
 log = get_logger("caption_generator")
 
 DEEPGRAM_LISTEN_URL = "https://api.deepgram.com/v1/listen"
-WORDS_PER_CARD = 5       # words per subtitle card
-MIN_CARD_DUR   = 0.8     # seconds minimum per card
+WORDS_PER_CARD = 1       # words per subtitle card (word-by-word style)
+MIN_CARD_DUR   = 0.1     # seconds minimum per card
 
 
 class CaptionGenerator:
