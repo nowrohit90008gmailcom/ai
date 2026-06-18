@@ -75,12 +75,9 @@ echo "⬇️  Downloading Models..."
 download_model() {
     local url=$1
     local path=$2
-    if [ ! -f "$path" ]; then
-        echo "Downloading $(basename $path)..."
-        wget -q --show-progress -O "$path" "$url" || echo "⚠️  Download failed for $path"
-    else
-        echo "✅ $(basename $path) already present"
-    fi
+    echo "Downloading $(basename $path)..."
+    # -c enables resuming partial downloads. If fully downloaded, it skips automatically.
+    wget -c -q --show-progress -O "$path.tmp" "$url" && mv "$path.tmp" "$path" || echo "⚠️  Download failed for $path"
 }
 
 download_model "https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/flux1-schnell.safetensors" "$MODELS_DIR/unet/flux1-schnell.safetensors"
