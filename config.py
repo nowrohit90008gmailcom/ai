@@ -376,7 +376,7 @@ if _MISSING_KEYS:
     print("  ShortForge STARTUP ERROR: Missing required .env values")
     print("="*60)
     for _k in _MISSING_KEYS:
-        print(f"  ✗ {_k} is not set")
+        print(f"  [X] {_k} is not set")
     print("\n  Edit your .env file and set these values, then restart.")
     print("="*60 + "\n")
     _sys.exit(1)

@@ -45,6 +45,31 @@ class ContentScraper:
         self.sources = SCRAPE_SOURCES.get(channel, [])
 
     # ─── Public API ──────────────────────────────────────────────────────────
+    def _is_relevant(self, story: dict) -> bool:
+        """Checks if the story is relevant to the channel type (e.g. crime for horror_crime)."""
+        if self.channel != "horror_crime":
+            return True
+
+        crime_keywords = [
+            "murder", "killer", "crime", "missing", "arrest", "investigation", 
+            "victim", "body", "homicide", "fbi", "police", "sheriff", "dead",
+            "death", "suspect", "stolen", "heist", "robbery", "kidnap", "assault",
+            "serial", "tragedy", "mystery", "unsolved", "cold case", "court",
+            "trial", "prison", "convict", "sentence", "jail", "detective", "slain",
+            "shot", "stab", "poison", "strangle", "kidnapped", "abducted", "fugitive",
+            "abduct", "homicide", "burglar", "thief", "witness", "confess", "confession",
+            "suspect", "fingerprint", "autopsy", "intruder", "stalker"
+        ]
+
+        title = story.get("title", "").lower()
+        summary = story.get("summary", "").lower()
+
+        # Check if any keyword matches
+        for kw in crime_keywords:
+            if kw in title or kw in summary:
+                return True
+        return False
+
     def scrape_month(self, count: int = 60) -> list[dict]:
         """Scrape `count` stories for this channel."""
         history_file = DATA_DIR / f"history_{self.channel}.json"
@@ -63,11 +88,14 @@ class ContentScraper:
                 break
             try:
                 batch = self._scrape_source(source_url)
-                # Filter against historical repeats
+                # Filter against historical repeats and relevance
                 for s in batch:
                     key = s.get("title", "")[:80].strip().lower()
                     if key and key not in history:
-                        stories.append(s)
+                        if self._is_relevant(s):
+                            stories.append(s)
+                        else:
+                            log.info(f"[{self.channel}] Filtered out irrelevant story: '{s.get('title')}'")
                 log.info(f"[{self.channel}] Scraped {len(batch)} from {source_url}")
             except Exception as e:
                 log.warning(f"[{self.channel}] Failed {source_url}: {e}")

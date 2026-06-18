@@ -43,6 +43,7 @@ Rules:
 - description: 150-200 words, SEO optimized, US-focused, include keywords naturally
 - tags: exactly 20 tags, mix of broad and specific US-trending terms
 - hashtags: exactly 5, include #Shorts and channel-specific tags
+- STRICTLY STICK TO THE SCRIPT: All titles and descriptions must be based ONLY on details explicitly mentioned in the provided script. Do NOT hallucinate, fabricate, or introduce any external facts, organizations (such as the "FBI", "CIA", or specific police departments), locations, numbers, or claims unless they are directly stated in the script.
 
 Return ONLY the JSON object. No markdown, no explanation."""
 
