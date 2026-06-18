@@ -14,7 +14,7 @@ set -e
 
 MONTH="${1:-$(date +%Y_%m)}"
 WORKSPACE="/workspace"
-FACTORY_DIR="$WORKSPACE/factory"
+FACTORY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMFYUI_DIR="$WORKSPACE/ComfyUI"
 MODELS_DIR="$COMFYUI_DIR/models"
 
@@ -105,8 +105,8 @@ mkdir -p /mnt/gdrive
 rclone mount gdrive: /mnt/gdrive --daemon --vfs-cache-mode writes || \
     echo "⚠️  Google Drive mount failed — check rclone config"
 
-# ─── 8. Systemd Services & Logging ───────────────────────────────────────────
-echo "⚙️  Setting up Systemd Services & Logs..."
+# ─── 8. Background Services & Logging ───────────────────────────────────────────
+echo "⚙️  Starting ComfyUI in the background..."
 
 # Setup logrotate
 cat <<EOF > /etc/logrotate.d/youtube_factory
@@ -120,67 +120,8 @@ cat <<EOF > /etc/logrotate.d/youtube_factory
 }
 EOF
 
-cat <<EOF > /etc/systemd/system/comfyui.service
-[Unit]
-Description=ComfyUI Service
-After=network.target
-
-[Service]
-Type=simple
-WorkingDirectory=$COMFYUI_DIR
-ExecStart=/usr/bin/python3 main.py --listen 0.0.0.0 --port 8188 --output-directory $WORKSPACE/output
-Restart=always
-RestartSec=5
-User=root
-StandardOutput=append:/workspace/logs/comfyui.log
-StandardError=append:/workspace/logs/comfyui.log
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-cat <<EOF > /etc/systemd/system/comfyui_watchdog.service
-[Unit]
-Description=ComfyUI Watchdog Service
-After=comfyui.service
-
-[Service]
-Type=simple
-WorkingDirectory=$FACTORY_DIR
-ExecStart=/usr/bin/python3 -m modules.comfyui_watchdog
-Restart=always
-RestartSec=10
-User=root
-StandardOutput=append:/workspace/logs/watchdog.log
-StandardError=append:/workspace/logs/watchdog.log
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-cat <<EOF > /etc/systemd/system/factory_runner.service
-[Unit]
-Description=Factory Runner Pipeline
-Requires=comfyui.service
-After=comfyui.service
-
-[Service]
-Type=simple
-WorkingDirectory=$FACTORY_DIR
-ExecStart=/usr/bin/python3 -m modules.factory_runner --month $MONTH
-Restart=always
-RestartSec=10
-User=root
-StandardOutput=append:/workspace/logs/factory_runner.log
-StandardError=append:/workspace/logs/factory_runner.log
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-systemctl daemon-reload
-systemctl enable comfyui comfyui_watchdog factory_runner
-systemctl start comfyui
+cd $COMFYUI_DIR
+nohup python3 main.py --listen 0.0.0.0 --port 8188 --output-directory $WORKSPACE/output > /workspace/logs/comfyui.log 2>&1 &
 
 echo "⏳ Waiting for ComfyUI to start (can take several minutes)..."
 timeout 180 bash -c 'until curl -s http://localhost:8188/system_stats > /dev/null; do sleep 5; echo "Waiting..."; done' || true
@@ -210,12 +151,13 @@ fi
 
 # ─── 9. Start Pipeline ────────────────────────────────────────────────────────
 echo "🚀 Validation passed! Starting factory pipeline & watchdog..."
-systemctl start comfyui_watchdog
-systemctl start factory_runner
+cd $FACTORY_DIR
+nohup python3 -m modules.comfyui_watchdog > /workspace/logs/watchdog.log 2>&1 &
+nohup python3 -m modules.factory_runner --month $MONTH > /workspace/logs/factory_runner.log 2>&1 &
 
 echo ""
 echo "✅ Setup complete!"
 echo "  ComfyUI: http://localhost:8188"
-echo "  Runner Status: systemctl status factory_runner"
+echo "  Runner Status: ps aux | grep python"
 echo "  Logs:    tail -f /workspace/logs/*.log"
 echo "  Output:  $WORKSPACE/output/"
