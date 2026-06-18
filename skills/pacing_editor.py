@@ -54,9 +54,11 @@ Examples: "Wait.", "Here's the thing.", "Listen carefully."
 3. PAUSE MARKS: Every sentence that would benefit from a dramatic pause \
 should end with "..." or "—". Add these where they're missing but natural.
 
-4. Keep the CTA (last sentence) EXACTLY as-is.
-5. Do NOT add more than 15% extra words — keep it tight.
-6. Return ONLY the improved script text. No labels, no explanation, no markdown.
+4. EXPRESSION & EMOTION: Capitalize 2-3 key words per script that should be EMPHASIZED by the voice actor. Liberally use exclamation points (!) or question marks to force dramatic, emotional intonation in the TTS voice.
+
+5. Keep the CTA (last sentence) EXACTLY as-is.
+6. Do NOT add more than 15% extra words — keep it tight.
+7. Return ONLY the improved script text. No labels, no explanation, no markdown.
 """
 
 CHANNEL_AUDIENCES = {

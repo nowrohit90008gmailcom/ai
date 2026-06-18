@@ -75,6 +75,7 @@ Requirements:
 - Always end with a clear moral lesson (one sentence)
 - Tone: Maximum fun, silly, expressive
 - Pacing: CRITICAL - You MUST use frequent ellipses (...) and em-dashes (—) to force natural speaking pauses.
+- Emotion: Capitalize EMPHATIC words and use exclamation marks (!) to trigger dramatic emotion in the TTS engine.
 - Write short sentences with breathing room between thoughts.
 - CTA: "Follow for more cartoon stories!"
 
