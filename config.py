@@ -236,7 +236,7 @@ CAPTION_FONT_COLOR  = "white"
 CAPTION_OUTLINE     = 3             # outline thickness in px
 CAPTION_Y_POSITION  = "(h-th)/1.15" # Near bottom of frame
 HOOK_TEXT_DURATION  = 3.0           # seconds the hook text is shown
-MUSIC_VOLUME        = 0.12          # 12% of full volume (keeps narration audible)
+MUSIC_VOLUME        = 0.07          # 7% of full volume (keeps narration audible)
 SHORTS_PER_CHANNEL_PER_MONTH = 60
 TOTAL_SHORTS_PER_MONTH = 180
 
