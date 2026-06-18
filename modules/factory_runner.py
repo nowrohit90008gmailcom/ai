@@ -119,6 +119,14 @@ class FactoryRunner:
     def run(self, channels: list[str] = None):
         channels = channels or CHANNEL_NAMES
         log.info(f"Starting Production Streaming Factory — month: {self.month}")
+        
+        # Ensure background music is downloaded before starting
+        try:
+            log.info("Checking/downloading background music...")
+            subprocess.run([sys.executable, "download_music.py"], check=True)
+        except Exception as e:
+            log.warning(f"Failed to download background music: {e}")
+            
         self.monitor.start()
 
         # Discover pending jobs
