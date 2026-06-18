@@ -31,6 +31,7 @@ from config import (
 )
 from modules.cerebras_client import CerebrasWrapper
 from modules.logger import get_logger
+from skills.director_agent import DirectorAgent
 
 log = get_logger("image_generator")
 
@@ -201,6 +202,8 @@ class ImageGenerator:
             self.url = COMFYUI_URL.rstrip("/")
         # Cerebras client
         self._cerebras = CerebrasWrapper()
+        # Director Agent skill
+        self._director = DirectorAgent()
 
     # ─── Public API ───────────────────────────────────────────────────────────
 
@@ -220,9 +223,16 @@ class ImageGenerator:
             prompts = self._fallback_prompts(channel, script, num_scenes, idea)
             log.info(f"[{channel}] Using fallback template prompts")
 
-            log.info(f"  Prompt: {prompt[:80]}...")
-            time.sleep(0.5)
+        # ── DirectorAgent: upgrade prompts with shot types + lighting ─────────
+        log.info(f"[{channel}] 🎬 Running DirectorAgent...")
+        prompts = self._director.upgrade_prompts(channel, script, prompts)
 
+        # Build and submit all jobs to ComfyUI
+        jobs = [
+            (prompt, output_dir / f"scene_{i+1:02d}.png")
+            for i, prompt in enumerate(prompts)
+        ]
+        paths = self._batch_generate(jobs, channel)
         return paths
 
     def generate_thumbnail(self, channel: str, output_dir: Path,

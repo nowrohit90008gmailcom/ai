@@ -1,10 +1,16 @@
 """
 modules/script_generator.py — Full YouTube Shorts script generation using Cerebras.
 
-Generates 80–130 word scripts in the [HOOK][STORY][PUNCHLINE][CTA] format,
+Generates 140-260 word scripts in the narrative format,
 tailored per channel style and voice.
+
+SKILLS PIPELINE (runs before / after main generation):
+  1. HookSpecialist  — generates 3 competing hooks, picks the best one
+  2. ScriptGenerator — writes the full script around the winning hook
+  3. PacingEditor    — injects open loops + pattern interrupts for retention
 """
 
+import re
 import time
 from config import (
     CEREBRAS_MODEL,
@@ -13,6 +19,8 @@ from config import (
 )
 from modules.cerebras_client import CerebrasWrapper
 from modules.logger import get_logger
+from skills.hook_specialist import HookSpecialist
+from skills.pacing_editor import PacingEditor
 
 log = get_logger("script_generator")
 
@@ -25,8 +33,7 @@ Hook type: {hook_type}
 
 Requirements:
 - Total length: 140-260 words (target around 180 words for a 60-second short)
-- Format: [HOOK] [STORY] [PUNCHLINE] [CTA]
-- Hook: First sentence must create instant dread or curiosity using: {hook_preview}
+- Hook: Open with EXACTLY this sentence: {hook_preview}
 - Reference real American locations, FBI/local PD, US legal terms where applicable
 - Tone: Suspenseful, conversational, like a true crime podcast
 - Pacing: CRITICAL - You MUST use frequent ellipses (...) and em-dashes (—) to force natural speaking pauses.
@@ -40,12 +47,10 @@ Return ONLY the script text. No labels, no explanation, no markdown.""",
 
 Topic: {story_text}
 Lesson: {angle}
-Hook: {hook_preview}
 
 Requirements:
 - Total length: 140-260 words (target around 180 words for a 60-second short)
-- Format: [HOOK] [STORY] [PUNCHLINE] [CTA]
-- Hook: Fun question or relatable situation
+- Hook: Open with EXACTLY this sentence: {hook_preview}
 - Use simple vocabulary (grade 1-3 reading level)
 - Include ONE fun rhyme or repetition kids can remember
 - Align with US kindergarten social skills standards
@@ -61,12 +66,10 @@ Return ONLY the script text. No labels, no explanation, no markdown.""",
 
 Character: {angle}
 Story: {story_text}
-Hook: {hook_preview}
 
 Requirements:
 - Total length: 140-260 words (target around 180 words for a 60-second short)
-- Format: [HOOK] [STORY] [PUNCHLINE] [CTA]
-- Hook: Exciting action or funny situation in first sentence
+- Hook: Open with EXACTLY this sentence: {hook_preview}
 - Use American humor, relatable school/home settings
 - Include action words: Zoom! Bam! Whoosh! Pop! at dramatic moments
 - Always end with a clear moral lesson (one sentence)
@@ -80,32 +83,49 @@ Return ONLY the script text. No labels, no explanation, no markdown.""",
 
 
 class ScriptGenerator:
-    """Generates per-channel scripts using Cerebras."""
+    """Generates per-channel scripts using Cerebras + the 3-stage Skills pipeline."""
 
     def __init__(self):
-        self.client = CerebrasWrapper()
+        self.client       = CerebrasWrapper()
+        self.hook_skill   = HookSpecialist()
+        self.pacing_skill = PacingEditor()
 
     def generate(self, channel: str, idea: dict) -> str:
-        """Generate a script from a structured idea."""
+        """
+        Full 3-stage skills pipeline:
+          Stage A — HookSpecialist generates 3 competing hooks and picks the best
+          Stage B — Main script is written using the winning hook as the opener
+          Stage C — PacingEditor injects open loops + pattern interrupts
+        """
         story = idea.get("raw_story", {})
         story_text = f"{story.get('title', '')}. {story.get('summary', '')}"
 
+        # ── Stage A: Hook Competition ─────────────────────────────────────────
+        log.info(f"[{channel}] 🎣 Running HookSpecialist...")
+        best_hook = self.hook_skill.get_best_hook(channel, idea)
+
+        # ── Stage B: Script Generation ────────────────────────────────────────
         prompt = SCRIPT_PROMPTS[channel].format(
             story_text=story_text[:800],
             angle=idea.get("angle", idea.get("lesson", idea.get("character_name", ""))),
             hook_type=idea.get("hook_type", "cliffhanger"),
-            hook_preview=idea.get("hook_preview", ""),
+            hook_preview=best_hook,
         )
+        script = self._call_cerebras(prompt)
 
-        script = self._call_cerebras(prompt)  # uses CEREBRAS_MAX_TOKENS_SCRIPT from config
-        # Strip structural labels that the model sometimes adds (e.g. [HOOK], [CTA])
-        import re
-        script = re.sub(r"\[HOOK\]|\[STORY\]|\[PUNCHLINE\]|\[CTA\]|\[LESSON\]|\[MORAL\]", "", script).strip()
-        # Collapse multiple blank lines
+        # Strip structural labels that the model sometimes adds
+        script = re.sub(
+            r"\[HOOK\]|\[STORY\]|\[PUNCHLINE\]|\[CTA\]|\[LESSON\]|\[MORAL\]",
+            "", script
+        ).strip()
         script = re.sub(r"\n{3,}", "\n\n", script)
-        log.debug(f"[{channel}] Raw script response: {repr(script[:200])}")
+
+        # ── Stage C: Pacing Edit ──────────────────────────────────────────────
+        log.info(f"[{channel}] ✍️  Running PacingEditor...")
+        script = self.pacing_skill.improve(channel, script)
+
         word_count = len(script.split())
-        log.info(f"[{channel}] Script generated ({word_count} words): {script[:60]}...")
+        log.info(f"[{channel}] ✅ Script ready ({word_count} words): {script[:60]}...")
         return script
 
     def generate_batch(self, channel: str, ideas: list[dict]) -> list[str]:
@@ -123,5 +143,5 @@ class ScriptGenerator:
             messages=[{"role": "user", "content": prompt}],
             max_tokens=max_tokens or CEREBRAS_MAX_TOKENS_SCRIPT,
             temperature=CEREBRAS_TEMP_CREATIVE,
-            retries=5
+            retries=5,
         )
