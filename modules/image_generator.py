@@ -290,7 +290,16 @@ class ImageGenerator:
                         f"{self.url}/history/{pid}", timeout=10
                     ).json()
                     if pid in history:
+                        status = history[pid].get("status", {})
+                        
+                        # Check for execution errors
+                        if status.get("status_str") == "error":
+                            error_msg = status.get("messages", ["Unknown error"])[0]
+                            log.error(f"[{channel}] ComfyUI failed for {out_path.name}: {error_msg}")
+                            break
+                            
                         outputs = history[pid].get("outputs", {})
+                        found_image = False
                         for node_out in outputs.values():
                             if "images" in node_out:
                                 info = node_out["images"][0]
@@ -305,11 +314,15 @@ class ImageGenerator:
                                 ).content
                                 out_path.write_bytes(img)
                                 log.info(f"[{channel}] Done: {out_path.name}")
+                                found_image = True
                                 return out_path
+                                
+                        if not found_image:
+                            log.error(f"[{channel}] ComfyUI job finished but no outputs found for {out_path.name}! History: {history[pid]}")
                         break
-                except Exception:
+                except Exception as e:
                     pass
-            log.warning(f"[{channel}] Timeout polling {out_path.name}")
+            log.warning(f"[{channel}] Polling exited for {out_path.name}")
             return out_path
 
         with ThreadPoolExecutor(max_workers=COMFYUI_POLL_WORKERS) as ex:
