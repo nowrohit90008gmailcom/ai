@@ -123,9 +123,9 @@ class CerebrasWrapper:
                 
             # Reasoning models consume max_tokens for their internal 'thinking'.
             # If max_tokens is too low, they hit finish_reason='length' before outputting content.
-            if max_tokens < 4000:
-                log.debug(f"[{model}] Boosting max_tokens {max_tokens} → 4000 to allow room for reasoning")
-                max_tokens = 4000
+            if max_tokens < 8192:
+                log.debug(f"[{model}] Boosting max_tokens {max_tokens} → 8192 to allow room for reasoning")
+                max_tokens = 8192
 
         for attempt in range(1, retries + 1):
             client = self.clients[self.current_key_idx]
