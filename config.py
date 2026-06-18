@@ -132,24 +132,38 @@ CHANNEL_NAMES = list(CHANNELS.keys())
 # ─── Scraping Sources Per Channel ─────────────────────────────────────────────
 SCRAPE_SOURCES = {
     "horror_crime": [
-        "https://www.oxygen.com/true-crime-buzz",
+        # ── Major US crime news networks ──
         "https://www.cbsnews.com/crime/",
-        "https://www.huffpost.com/news/topic/crime",
-        "https://www.investigationdiscovery.com/crimefeed",
-        "https://www.mirror.co.uk/news/us-news/crime/",
-        "https://en.wikipedia.org/wiki/List_of_serial_killers_in_the_United_States",
-        "https://en.wikipedia.org/wiki/List_of_unsolved_murders",
         "https://www.cnn.com/us/crime-and-justice",
         "https://www.foxnews.com/category/us/crime",
         "https://abcnews.go.com/US",
         "https://www.nbcnews.com/news/us-news/crime-courts",
         "https://www.usatoday.com/news/nation/crime/",
+        "https://www.huffpost.com/news/topic/crime",
+        # ── True crime dedicated sites ──
+        "https://lawandcrime.com/crime/",          # Live court coverage, legal analysis, RSS: /feed
+        "https://crimereads.com/category/true-crime/",  # Deep-dive essays, cold cases, RSS: /feed
+        "https://www.crimeonline.com/category/crime/",  # Breaking crime, missing persons, RSS: /feed
+        "https://www.oxygen.com/true-crime-buzz",
+        "https://www.investigationdiscovery.com/crimefeed",
+        # ── Investigative journalism ──
+        "https://www.propublica.org/criminal-justice",    # Investigative nonprofit journalism
+        "https://theintercept.com/justice/",              # Long-form investigative crime reporting
+        "https://www.themarshallproject.org/",            # Criminal justice nonprofit journalism
+        "https://www.mirror.co.uk/news/us-news/crime/",
+        # ── Wikipedia cold case / historical ──
+        "https://en.wikipedia.org/wiki/List_of_serial_killers_in_the_United_States",
+        "https://en.wikipedia.org/wiki/List_of_unsolved_murders",
+        "https://en.wikipedia.org/wiki/List_of_cold_cases_in_the_United_States",
+        "https://en.wikipedia.org/wiki/List_of_solved_cold_cases",
+        # ── Regional investigative crime ──
+        "https://www.local10.com/news/crime/",            # South Florida crime news
+        "https://abc7.com/tag/crime/",                    # LA-area crime coverage
     ],
     "manners_fun": [
+        # ── Major parenting publications ──
         "https://www.motherly.com/parenting/",
         "https://www.scarymommy.com/parenting/",
-        "https://www.pbs.org/parents/",
-        "https://www.commonsensemedia.org/",
         "https://www.parents.com/",
         "https://www.fatherly.com/",
         "https://www.todaysparent.com/",
@@ -157,24 +171,50 @@ SCRAPE_SOURCES = {
         "https://www.romper.com/",
         "https://www.moms.com/",
         "https://www.verywellfamily.com/",
+        # ── Education & child development ──
+        "https://www.pbs.org/parents/",
+        "https://www.commonsensemedia.org/",
+        "https://www.kidshealth.org/en/parents/",         # KidsHealth — social/emotional tips
+        "https://childmind.org/topics/concerns/social-skills/",  # Child Mind Institute
+        "https://www.understood.org/articles/social-skills",      # Learning/social skills
+        "https://zerotothree.org/resources/",             # Early childhood development
+        # ── Evidence-based parenting blogs ──
+        "https://parentingscience.com/",                  # Science-backed parenting advice
+        "https://janetlansbury.com/articles/",            # Respectful parenting, RSS: /feed
+        "https://biglifejournal.com/blogs/blog",          # Growth mindset + social skills
+        "https://centerforparentingeducation.org/library-of-articles/",  # Manners & skills
+        # ── News parenting sections ──
         "https://www.cnn.com/health/parenting",
         "https://www.nbcnews.com/parenting",
-        "https://www.nytimes.com/section/well/family",
         "https://www.huffpost.com/life/parents",
+        "https://www.unicef.org/parenting/",              # UNICEF child dev articles
     ],
     "cartoon_stories": [
+        # ── Public domain archives ──
         "https://www.gutenberg.org/browse/scores/top",
         "https://www.aesopfables.com/",
         "https://americanliterature.com/childrens-stories",
-        "https://www.storynory.com/",
-        "https://storiestogrowby.org/",
-        "https://freestoriesforkids.com/",
-        "https://www.bedtime.com/",
-        "https://fairytalez.com/",
-        "https://www.magickeys.com/books/",
         "https://en.wikipedia.org/wiki/List_of_fairy_tales",
         "https://en.wikipedia.org/wiki/Aesop%27s_Fables",
         "https://en.wikipedia.org/wiki/Fable",
+        # ── Active story websites with RSS feeds ──
+        "https://www.storynory.com/",                     # Free audio + text stories, RSS feed
+        "https://storiestogrowby.org/",                   # World fables / multicultural stories
+        "https://freestoriesforkids.com/",                # Short stories for early readers
+        "https://www.bedtime.com/",                       # Short bedtime stories
+        "https://fairytalez.com/",                        # Classic fairy tale archive
+        "https://storyberries.com/category/fairy-tales/", # Fairy tales + modern stories, RSS: /feed
+        "https://www.magickeys.com/books/",               # Interactive kids story books
+        # ── Creative Commons & educational ──
+        "https://www.moralstories.org/",                  # Short moral stories for kids
+        "https://shortkidstories.com/",                   # Short fiction for ages 3-12
+        "https://www.pitara.com/fiction-for-kids/folktales/",  # Global folk tales
+        "https://archive.org/details/texts",              # Internet Archive — thousands of public domain books
+        "https://freekidsbooks.org/",                     # Free Creative Commons picture books
+        # ── Fable / character story specific ──
+        "https://www.taleswithmorals.com/",               # Fables with clear moral lessons
+        "https://www.ducksters.com/stories/",             # Educational stories for kids
+        "https://www.coolkidfacts.com/",                  # Fun educational facts for kids 5-10
     ],
 }
 
