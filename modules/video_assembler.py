@@ -77,7 +77,10 @@ class VideoAssembler:
 
             # ── Step 3: Build and run final ffmpeg assembly command ───────────
             hook_text  = (seo or {}).get("title_clickbait", "") if seo else ""
-            music_path = self._pick_music()
+            
+            # Extract channel name from parent directory (e.g., run_2026_06/horror_crime/short_01)
+            channel = short_dir.parent.name
+            music_path = self._pick_music(channel)
 
             success = self._run_assembly(
                 short_dir   = short_dir,
@@ -259,16 +262,26 @@ class VideoAssembler:
 
     # ─── Music Picker ─────────────────────────────────────────────────────────
     @staticmethod
-    def _pick_music() -> Path | None:
+    def _pick_music(channel: str = None) -> Path | None:
         """
-        Pick a random .mp3 from static/music/.
+        Pick a random .mp3 from static/music/{channel}/ if provided,
+        else from static/music/.
         Returns None if directory is empty (no music → silent bg).
         Place royalty-free tracks in static/music/ — YouTube Audio Library recommended.
         """
         try:
-            tracks = list(MUSIC_DIR.glob("*.mp3"))
+            target_dir = MUSIC_DIR
+            if channel:
+                channel_dir = MUSIC_DIR / channel
+                if channel_dir.exists():
+                    target_dir = channel_dir
+                else:
+                    # Fallback to root music dir if channel dir doesn't exist
+                    pass
+            
+            tracks = list(target_dir.glob("*.mp3"))
             if tracks:
                 return random.choice(tracks)
-        except Exception:
-            pass
+        except Exception as e:
+            log.warning(f"Error picking music: {e}")
         return None
