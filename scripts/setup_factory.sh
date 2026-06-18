@@ -37,8 +37,8 @@ apt-get install -y -q \
 
 # ─── 2. Python packages ──────────────────────────────────────────────────────
 echo "📚 Installing Python packages..."
-pip install -q torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-pip install -q \
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+pip install \
     requests \
     loguru \
     python-dotenv \
@@ -50,13 +50,13 @@ if [ ! -d "$COMFYUI_DIR" ]; then
     git clone --depth=1 https://github.com/comfyanonymous/ComfyUI $COMFYUI_DIR
 fi
 cd $COMFYUI_DIR
-pip install -q -r requirements.txt
+pip install -r requirements.txt
 
 echo "🧩 Installing Custom Nodes..."
 cd $COMFYUI_DIR/custom_nodes
 if [ ! -d "ComfyUI-VideoHelperSuite" ]; then
     git clone https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
-    pip install -q -r ComfyUI-VideoHelperSuite/requirements.txt
+    pip install -r ComfyUI-VideoHelperSuite/requirements.txt
 fi
 
 # ─── 4. Create model directories ─────────────────────────────────────────────
