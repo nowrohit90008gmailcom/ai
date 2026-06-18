@@ -198,32 +198,93 @@ class VideoGenerator:
                 "inputs": {"image": image_filename},
             },
             "2": {
-                "class_type": "LTXImageToVideo",
+                "class_type": "UNETLoader",
                 "inputs": {
-                    "image":            ["1", 0],
-                    "ckpt_name":        LTX_MODEL,
-                    "fps":              settings["fps"],
-                    "num_frames":       settings["num_frames"],
-                    "seed":             int(uuid.uuid4().int % 2**32),
-                    "steps":            LTX_STEPS,
-                    "cfg":              LTX_CFG,
-                    "width":            width,
-                    "height":           height,
-                },
+                    "unet_name": LTX_MODEL,
+                    "weight_dtype": "fp8_e4m3fn"
+                }
             },
             "3": {
+                "class_type": "DualCLIPLoader",
+                "inputs": {
+                    "clip_name1": "t5xxl_fp8_e4m3fn.safetensors",
+                    "clip_name2": "clip_l.safetensors",
+                    "type": "ltxv"
+                }
+            },
+            "4": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {
+                    "text": "",
+                    "clip": ["3", 0]
+                }
+            },
+            "5": {
+                "class_type": "VAELoader",
+                "inputs": {
+                    "vae_name": "ltx-video-vae.safetensors"
+                }
+            },
+            "6": {
+                "class_type": "LTXVImgToVideo",
+                "inputs": {
+                    "positive": ["4", 0],
+                    "negative": ["4", 0],
+                    "vae": ["5", 0],
+                    "image": ["1", 0],
+                    "width": width,
+                    "height": height,
+                    "length": settings["num_frames"],
+                    "batch_size": 1,
+                    "strength": 1.0
+                }
+            },
+            "7": {
+                "class_type": "LTXVScheduler",
+                "inputs": {
+                    "steps": LTX_STEPS,
+                    "max_shift": 1.5,
+                    "base_shift": 1.5,
+                    "stretch": True,
+                    "terminal": 0.0,
+                    "model": ["2", 0]
+                }
+            },
+            "8": {
+                "class_type": "KSampler",
+                "inputs": {
+                    "seed": int(uuid.uuid4().int % 2**32),
+                    "steps": LTX_STEPS,
+                    "cfg": LTX_CFG,
+                    "sampler_name": "euler",
+                    "scheduler": "normal",
+                    "denoise": 1.0,
+                    "model": ["7", 0],
+                    "positive": ["6", 0],
+                    "negative": ["6", 1],
+                    "latent_image": ["6", 2]
+                }
+            },
+            "9": {
+                "class_type": "VAEDecode",
+                "inputs": {
+                    "samples": ["8", 0],
+                    "vae": ["5", 0]
+                }
+            },
+            "10": {
                 "class_type": "VHS_VideoCombine",
                 "inputs": {
-                    "images":           ["2", 0],
-                    "frame_rate":       settings["fps"],
-                    "loop_count":       0,
-                    "filename_prefix":  "clip_ltx",
-                    "format":           "video/h264-mp4",
-                    "pix_fmt":          "yuv420p",
-                    "crf":              19,
-                    "save_metadata":    False,
-                    "pingpong":         False,
-                    "save_output":      True,
-                },
-            },
+                    "images": ["9", 0],
+                    "frame_rate": settings["fps"],
+                    "loop_count": 0,
+                    "filename_prefix": "clip_ltx",
+                    "format": "video/h264-mp4",
+                    "pix_fmt": "yuv420p",
+                    "crf": 19,
+                    "save_metadata": False,
+                    "pingpong": False,
+                    "save_output": True
+                }
+            }
         }

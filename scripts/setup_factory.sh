@@ -85,6 +85,7 @@ download_model "https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/
 download_model "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors" "$MODELS_DIR/clip/t5xxl_fp8_e4m3fn.safetensors"
 download_model "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors" "$MODELS_DIR/clip/clip_l.safetensors"
 download_model "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.1.safetensors" "$MODELS_DIR/diffusion_models/ltx-video-2b-v0.9.1.safetensors"
+download_model "https://huggingface.co/Kijai/LTX-Video-comfy/resolve/main/ltx-video-vae.safetensors" "$MODELS_DIR/vae/ltx-video-vae.safetensors"
 
 # ─── 6. Install rclone ────────────────────────────────────────────────────────
 echo "☁️  Installing rclone..."
