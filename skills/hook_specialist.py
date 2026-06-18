@@ -71,10 +71,10 @@ Character: {angle}
 Story: {story_text}
 
 Write exactly 3 hooks. Each must use a DIFFERENT hook type:
-- ACTION_OPEN: Start mid-action: "Zoom! {character} was flying when..."
+- ACTION_OPEN: Start mid-action: "Zoom! [the character] was flying when..."
 - MYSTERY_OPEN: "Nobody knew what was hiding inside the..."
-- FUNNY_PROBLEM: Start with a hilarious problem
-- EXCLAMATION: "OH NO! {character} just..."
+- FUNNY_PROBLEM: Start with a hilarious problem the character faces
+- EXCLAMATION: "OH NO! [the character] just..."
 - QUESTION: Ask the viewer a fun question about the character
 
 Return ONLY a valid JSON array of exactly 3 strings. No explanation:
@@ -143,7 +143,6 @@ class HookSpecialist:
         prompt = HOOK_GEN_PROMPT[channel].format(
             story_text=story_text[:600],
             angle=angle[:200],
-            character=angle[:80],   # for cartoon_stories template
         )
         raw = self.client.generate_completion(
             model=CEREBRAS_MODEL,
