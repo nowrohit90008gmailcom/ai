@@ -23,6 +23,7 @@ from config import (
     CAPTION_FONT_SIZE, CAPTION_OUTLINE,
 )
 from modules.caption_generator import CaptionGenerator
+from modules.sfx_generator import SFXGenerator
 from modules.logger import get_logger
 
 log = get_logger("video_assembler")
@@ -78,9 +79,13 @@ class VideoAssembler:
             # ── Step 3: Build and run final ffmpeg assembly command ───────────
             hook_text  = (seo or {}).get("title_clickbait", "") if seo else ""
             
-            # Extract channel name from parent directory (e.g., run_2026_06/horror_crime/short_01)
             channel = short_dir.parent.name
             music_path = self._pick_music(channel)
+            
+            # ── Step 2.5: Generate SFX Track ─────────────────────────────────
+            sfx_path = short_dir / "sfx_track.mp3"
+            sfx_gen = SFXGenerator()
+            sfx_gen.generate_sfx_track(srt_path, clip_paths, audio_path, sfx_path)
 
             success = self._run_assembly(
                 short_dir   = short_dir,
@@ -90,6 +95,7 @@ class VideoAssembler:
                 output_path = output_path,
                 hook_text   = hook_text,
                 music_path  = music_path,
+                sfx_path    = sfx_path,
             )
 
             if success:
@@ -103,7 +109,7 @@ class VideoAssembler:
             return False
 
         finally:
-            for tmp in [clips_txt, raw_video]:
+            for tmp in [clips_txt, raw_video, short_dir / "sfx_track.mp3"]:
                 if tmp.exists():
                     try:
                         tmp.unlink()
@@ -141,6 +147,7 @@ class VideoAssembler:
         output_path: Path,
         hook_text: str = "",
         music_path: Path = None,
+        sfx_path: Path = None,
     ) -> bool:
         """
         Build and execute the ffmpeg filter_complex command.
@@ -149,6 +156,7 @@ class VideoAssembler:
           [0] video  — raw concatenated clips (streamed with -stream_loop -1)
           [1] audio  — narration (defines final length via -shortest)
           [2] music  — optional background music (if present)
+          [3] sfx    — optional SFX track (if present)
         """
         # Scale + pad filter (letterbox to 1080×1920)
         scale_filter = (
@@ -203,28 +211,39 @@ class VideoAssembler:
 
         # ── Build inputs list ─────────────────────────────────────────────────
         inputs = [
-            # Looping video (loop forever, -shortest will trim to audio length)
             "-stream_loop", "-1", "-i", "_raw_video.mp4",
-            # Narration audio (shortest stream → defines output length)
             "-i", str(audio_path),
         ]
+        
+        audio_streams = ["[1:a]volume=1.0[narr]"]
+        amix_inputs = ["[narr]"]
+        
         if music_path and music_path.exists():
-            inputs += ["-i", str(music_path)]
+            inputs.extend(["-i", str(music_path)])
+            idx = (len(inputs) // 2) - 1
+            audio_streams.append(f"[{idx}:a]volume={MUSIC_VOLUME}[music]")
+            amix_inputs.append("[music]")
+            
+        if sfx_path and sfx_path.exists():
+            inputs.extend(["-i", str(sfx_path)])
+            idx = (len(inputs) // 2) - 1
+            audio_streams.append(f"[{idx}:a]volume=1.0[sfx]")
+            amix_inputs.append("[sfx]")
 
         # ── Build filter_complex ──────────────────────────────────────────────
-        if music_path and music_path.exists():
-            # Mix narration + background music
-            filter_complex = (
-                f"[0:v]{video_filter}[vout];"
-                f"[1:a]volume=1.0[narr];"
-                f"[2:a]volume={MUSIC_VOLUME}[music];"
-                f"[narr][music]amix=inputs=2:duration=first:dropout_transition=2[aout]"
-            )
+        filter_complex = f"[0:v]{video_filter}[vout];"
+        
+        if len(amix_inputs) > 1:
+            # Mix multiple audio tracks together
+            filter_complex += ";".join(audio_streams) + ";"
+            amix_str = "".join(amix_inputs)
+            filter_complex += f"{amix_str}amix=inputs={len(amix_inputs)}:duration=first:dropout_transition=2[aout]"
             map_args = ["-map", "[vout]", "-map", "[aout]"]
         else:
-            # No music — simple video filter + narration passthrough
-            filter_complex = f"[0:v]{video_filter}[vout]"
+            # No extra audio — simple passthrough
             map_args = ["-map", "[vout]", "-map", "1:a"]
+            # remove trailing semicolon from filter_complex
+            filter_complex = filter_complex.rstrip(";")
 
         # ── Final command ──────────────────────────────────────────────────────
         cmd = (
