@@ -115,7 +115,7 @@ CHANNELS = {
         "is_kids": True,
         "post_times_est": ["15:00", "19:00"],  # 3 PM, 7 PM
         "post_times_utc": ["20:00", "00:00"],
-        "deepgram_voice": "aura-helios-en",   # Energetic male voice — fast-paced and great for cartoons
+        "deepgram_voice": "aura-stella-en",   # Energetic female voice — bright and perfect for cartoons
         "pitch_multiplier": None,      # Keep natural
         "tempo": 0.97,                 # Increased to 0.97 for faster pace
         "motion_bucket_id": 127,       # High/dynamic motion
