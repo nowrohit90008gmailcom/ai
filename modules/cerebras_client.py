@@ -113,12 +113,19 @@ class CerebrasWrapper:
 
         # Reasoning models REQUIRE temperature >= 1.0.
         # Values below 1.0 cause them to silently return empty content.
-        if is_reasoning and temperature < MIN_REASONING_TEMP:
-            log.debug(
-                f"[{model}] Reasoning model detected — clamping temperature "
-                f"{temperature} → {MIN_REASONING_TEMP}"
-            )
-            temperature = MIN_REASONING_TEMP
+        if is_reasoning:
+            if temperature < MIN_REASONING_TEMP:
+                log.debug(
+                    f"[{model}] Reasoning model detected — clamping temperature "
+                    f"{temperature} → {MIN_REASONING_TEMP}"
+                )
+                temperature = MIN_REASONING_TEMP
+                
+            # Reasoning models consume max_tokens for their internal 'thinking'.
+            # If max_tokens is too low, they hit finish_reason='length' before outputting content.
+            if max_tokens < 4000:
+                log.debug(f"[{model}] Boosting max_tokens {max_tokens} → 4000 to allow room for reasoning")
+                max_tokens = 4000
 
         for attempt in range(1, retries + 1):
             client = self.clients[self.current_key_idx]
@@ -130,6 +137,11 @@ class CerebrasWrapper:
                     temperature=temperature,
                 )
                 response = client.chat.completions.create(**kwargs)
+                
+                choice = response.choices[0]
+                if choice.finish_reason == 'length':
+                    log.warning(f"[{model}] WARNING: Hit max_tokens limit ({max_tokens}). Output may be truncated or empty!")
+                    
                 content = self._extract_content(response)
 
                 if not content:
