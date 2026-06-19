@@ -231,6 +231,8 @@ class FactoryRunner:
             
             failed_dir = self.workspace.parent / "failed_shorts" / self.month / job['channel'] / job['short_id']
             failed_dir.parent.mkdir(parents=True, exist_ok=True)
+            if failed_dir.exists():
+                shutil.rmtree(failed_dir)
             shutil.move(str(short_dir), str(failed_dir))
             
             if job_str in self.processing_jobs:

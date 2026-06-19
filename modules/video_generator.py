@@ -151,7 +151,6 @@ class VideoGenerator:
                                     out_path.write_bytes(vid_bytes)
                                     log.info(f"[{channel}] Clip done: {out_path.name}")
                                     return out_path
-                        break   # outputs present but no video yet
                 except Exception:
                     pass
             log.warning(f"[{channel}] Clip timeout: {out_path.name}")

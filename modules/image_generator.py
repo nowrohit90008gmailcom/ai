@@ -359,20 +359,34 @@ class ImageGenerator:
         )
 
         try:
-            raw = self._cerebras.generate_completion(
-                model      = CEREBRAS_MODEL,               # cbsgpt-120b
-                messages   = [{"role": "user", "content": prompt_text}],
-                max_tokens = CEREBRAS_MAX_TOKENS_PROMPTS,  # 1400
-                temperature= CEREBRAS_TEMP_STRUCTURED,     # 0.30 — clean JSON array
-                retries    = 5
-            )
+            chunk_size = 7
+            all_prompts = []
+            for i in range(0, num_scenes, chunk_size):
+                chunk_n = min(chunk_size, num_scenes - i)
+                prompt_text = CEREBRAS_SCENE_PROMPT.format(
+                    channel_name = cfg["name"],
+                    audience     = cfg["audience"],
+                    style        = style_desc,
+                    script       = script[:900],   # trim to stay within context limit
+                    n            = chunk_n,
+                )
 
-            # Extract JSON array from response (handle markdown code blocks and preamble text)
-            cleaned = re.sub(r"```(?:json)?", "", raw).strip().rstrip("`")
-            match = re.search(r"\[.*\]", cleaned, re.DOTALL)
-            if not match:
-                raise json.JSONDecodeError("No JSON array found in response", raw, 0)
-            prompts = json.loads(match.group())
+                raw = self._cerebras.generate_completion(
+                    model      = CEREBRAS_MODEL,               # cbsgpt-120b
+                    messages   = [{"role": "user", "content": prompt_text}],
+                    max_tokens = CEREBRAS_MAX_TOKENS_PROMPTS,  # 1400
+                    temperature= CEREBRAS_TEMP_STRUCTURED,     # 0.30 — clean JSON array
+                    retries    = 5
+                )
+
+                # Extract JSON array from response (handle markdown code blocks and preamble text)
+                cleaned = re.sub(r"```(?:json)?", "", raw).strip().rstrip("`")
+                match = re.search(r"\[.*\]", cleaned, re.DOTALL)
+                if not match:
+                    raise json.JSONDecodeError("No JSON array found in response", raw, 0)
+                all_prompts.extend(json.loads(match.group()))
+                
+            prompts = all_prompts[:num_scenes]
 
             if (
                 isinstance(prompts, list)
