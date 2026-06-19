@@ -251,18 +251,23 @@ class VideoGenerator:
                 }
             },
             "8": {
-                "class_type": "KSampler",
+                "class_type": "SamplerCustom",
                 "inputs": {
-                    "seed": int(uuid.uuid4().int % 2**32),
-                    "steps": LTX_STEPS,
+                    "model": ["2", 0],
+                    "add_noise": True,
+                    "noise_seed": int(uuid.uuid4().int % 2**32),
                     "cfg": LTX_CFG,
-                    "sampler_name": "euler",
-                    "scheduler": "normal",
-                    "denoise": 1.0,
-                    "model": ["7", 0],
                     "positive": ["6", 0],
                     "negative": ["6", 1],
+                    "sampler": ["99", 0],
+                    "sigmas": ["7", 0],
                     "latent_image": ["6", 2]
+                }
+            },
+            "99": {
+                "class_type": "KSamplerSelect",
+                "inputs": {
+                    "sampler_name": "euler"
                 }
             },
             "9": {
