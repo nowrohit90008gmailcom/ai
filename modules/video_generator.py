@@ -204,10 +204,9 @@ class VideoGenerator:
                 }
             },
             "3": {
-                "class_type": "DualCLIPLoader",
+                "class_type": "CLIPLoader",
                 "inputs": {
-                    "clip_name1": "t5xxl_fp8_e4m3fn.safetensors",
-                    "clip_name2": "clip_l.safetensors",
+                    "clip_name": "t5xxl_fp8_e4m3fn.safetensors",
                     "type": "ltxv"
                 }
             },
