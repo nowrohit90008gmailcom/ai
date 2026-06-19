@@ -79,8 +79,14 @@ download_model() {
     local url=$1
     local path=$2
     echo "Downloading $(basename $path)..."
+    
+    local auth_header=""
+    if [ -f ~/.cache/huggingface/token ]; then
+        auth_header="--header=Authorization: Bearer $(cat ~/.cache/huggingface/token)"
+    fi
+    
     # -c enables resuming partial downloads. If fully downloaded, it skips automatically.
-    wget -c -q --show-progress -O "$path.tmp" "$url" && mv "$path.tmp" "$path" || echo "⚠️  Download failed for $path"
+    wget $auth_header -c -q --show-progress -O "$path.tmp" "$url" && mv "$path.tmp" "$path" || echo "⚠️  Download failed for $path"
 }
 
 download_model "https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/flux1-schnell.safetensors" "$MODELS_DIR/unet/flux1-schnell.safetensors"
