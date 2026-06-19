@@ -62,6 +62,11 @@ if [ ! -d "ComfyUI-VideoHelperSuite" ]; then
     pip install -r ComfyUI-VideoHelperSuite/requirements.txt
 fi
 
+if [ ! -d "ComfyUI-LTXVideo" ]; then
+    git clone https://github.com/Lightricks/ComfyUI-LTXVideo.git
+    pip install -r ComfyUI-LTXVideo/requirements.txt
+fi
+
 # ─── 4. Create model directories ─────────────────────────────────────────────
 echo "📂 Creating model directories..."
 mkdir -p $MODELS_DIR/checkpoints
