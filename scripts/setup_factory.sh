@@ -42,7 +42,10 @@ pip install \
     requests \
     loguru \
     python-dotenv \
-    aiofiles
+    aiofiles \
+    cerebras_cloud_sdk \
+    pydub \
+    yt-dlp
 
 # ─── 3. ComfyUI & Custom Nodes ────────────────────────────────────────────────
 echo "🎨 Setting up ComfyUI..."
